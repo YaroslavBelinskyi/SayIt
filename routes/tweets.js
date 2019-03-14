@@ -1,0 +1,41 @@
+const express = require('express');
+const { Tweet, validateTweet } = require('../models/tweets');
+const { User } = require('../models/users');
+
+const router = express.Router();
+
+router.get('/', async (req, res) => {
+    const tweets = await Tweet.find().sort('-creationDate');
+    res.send(tweets);
+});
+
+router.post('/create', async (req, res) => {
+    console.log(req.body);
+    const { error } = validateTweet(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    const user = await User.findById(req.body.userId);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    let tweet = new Tweet({
+        user: {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        },
+        tweetText: req.body.tweetText,
+        // numberOfLikes: req.body.numberOfLikes,
+        // numberOfComments: req.body.numberOfComments,
+    });
+
+    async function addTweetToUser(uId, tw) {
+        const userObj = await User.findById(uId);
+        userObj.tweets.push(tw);
+        userObj.save();
+    }
+    addTweetToUser(user._id, tweet);
+    tweet = await tweet.save();
+    res.send(tweet);
+});
+
+module.exports = router;
