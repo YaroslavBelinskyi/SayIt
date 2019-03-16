@@ -4,13 +4,15 @@ const { User } = require('../models/users');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-    const tweets = await Tweet.find().sort('-creationDate');
+router.get('/all', async (req, res) => {
+    const user = await User.findById(req.body.userId);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    const tweets = await Tweet.find({ 'user._id': req.body.userId }).sort('-creationDate');
     res.send(tweets);
 });
 
 router.post('/create', async (req, res) => {
-    console.log(req.body);
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -38,4 +40,10 @@ router.post('/create', async (req, res) => {
     res.send(tweet);
 });
 
+router.delete('/:id', async (req, res) => {
+    const tweet = await Tweet.findByIdAndDelete(req.params.id);
+    console.log(req.params.id);
+    if (!tweet) return res.status(400).send('Tweet was not found.');
+    res.send(tweet);
+});
 module.exports = router;
