@@ -55,6 +55,14 @@ function validateTweet(tweet) {
     return Joi.validate(tweet, schema);
 }
 
+function validateTweetEditing(tweet) {
+    const schema = {
+        newTweetText: Joi.string().min(1).max(322).required(),
+    };
+    return Joi.validate(tweet, schema);
+}
+
 exports.Tweet = Tweet;
 exports.tweetSchema = tweetSchema;
 exports.validateTweet = validateTweet;
+exports.validateTweetEditing = validateTweetEditing;
