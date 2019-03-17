@@ -25,7 +25,22 @@ const tweetSchema = new mongoose.Schema({
         minlength: 1,
         maxlength: 322,
     },
-    // tweetLikes: [schema]
+    listOfLikes: [{
+        type: new mongoose.Schema({
+            firstName: {
+                type: String,
+                required: true,
+                minlength: 3,
+                maxlength: 60,
+            },
+            lastName: {
+                type: String,
+                required: true,
+                minlength: 3,
+                maxlength: 60,
+            },
+        }),
+    }],
     // comments: [schema]
     numberOfLikes: {
         default: 0,
@@ -51,6 +66,7 @@ function validateTweet(tweet) {
         lastName: Joi.string().required(),
         numberOfLikes: Joi.number(),
         numberOfComments: Joi.number(),
+        listOfLikes: Joi.array(),
     };
     return Joi.validate(tweet, schema);
 }
@@ -62,7 +78,17 @@ function validateTweetEditing(tweet) {
     return Joi.validate(tweet, schema);
 }
 
+function validateTweetLike(tweet) {
+    const schema = {
+        userId: Joi.string().required(),
+        firstName: Joi.string().required(),
+        lastName: Joi.string().required(),
+    };
+    return Joi.validate(tweet, schema);
+}
+
 exports.Tweet = Tweet;
 exports.tweetSchema = tweetSchema;
 exports.validateTweet = validateTweet;
 exports.validateTweetEditing = validateTweetEditing;
+exports.validateTweetLike = validateTweetLike;
