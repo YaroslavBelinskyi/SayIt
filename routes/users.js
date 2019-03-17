@@ -1,8 +1,5 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-// const config = require('config');
-// const jwt = require('jsonwebtoken');
-// const mongoose = require('mongoose');
 const { User, validateUser } = require('../models/users');
 
 const router = express.Router();
@@ -12,8 +9,15 @@ router.get('/', async (req, res) => {
     res.send(users);
 });
 
+router.get('/:id', async (req, res) => {
+    let user = await User.findById(req.params.id);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    user = await User.findById(req.params.id).populate('tweets');
+    res.send(user);
+});
+
 router.post('/', async (req, res) => {
-    console.log(req.body);
     const { error } = validateUser(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 

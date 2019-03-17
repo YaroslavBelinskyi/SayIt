@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const Joi = require('joi');
 const jwt = require('jsonwebtoken');
 const config = require('config');
-const { tweetSchema } = require('../models/tweets');
 
 const userSchema = new mongoose.Schema({
     userName: {
@@ -38,7 +37,10 @@ const userSchema = new mongoose.Schema({
         minlength: 3,
         maxlength: 60,
     },
-    tweets: [tweetSchema],
+    tweets: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tweet',
+    }],
 });
 
 userSchema.methods.generateAuthToken = function () {
