@@ -7,5 +7,6 @@ module.exports = {
         "no-underscore-dangle": 0,
         "consistent-return": 0,
         "func-names": 0,
+        "no-inner-declarations": 0,
     },
 };

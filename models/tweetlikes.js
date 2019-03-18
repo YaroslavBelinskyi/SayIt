@@ -6,16 +6,20 @@ const tweetLikeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    tweet: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tweet',
+    },
 });
 
 const TweetLike = mongoose.model('TweetLike', tweetLikeSchema);
 
-function validateTweetLike(tweet) {
+function validateTweetLike(tweetlike) {
     const schema = {
-        tweetId: Joi.string().required(),
+        userId: Joi.string().required(),
     };
-    return Joi.validate(tweet, schema);
+    return Joi.validate(tweetlike, schema);
 }
 
-module.exports = TweetLike;
+exports.TweetLike = TweetLike;
 exports.validateTweetLike = validateTweetLike;
