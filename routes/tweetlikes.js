@@ -15,12 +15,12 @@ router.patch('/like/:tweetId', async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetId);
     if (!tweet) return res.status(400).send('Tweet was not found.');
 
-    const tweetWithLike = await TweetLike.find({
+    const tweetWithLike = await TweetLike.findOne({
         tweet: req.params.tweetId,
         user: req.body.userId,
     });
-    console.log(!tweetWithLike.length);
-    if (!tweetWithLike.length) {
+    console.log(tweetWithLike);
+    if (!tweetWithLike) {
         const tweetLike = new TweetLike({
             user: req.body.userId,
             tweet: req.params.tweetId,
@@ -43,6 +43,7 @@ router.patch('/like/:tweetId', async (req, res) => {
         const tweetObj = await Tweet.findById(req.params.tweetId);
         const like = await TweetLike.findOneAndDelete({
             user: req.body.userId,
+            tweet: req.params.tweetId,
         });
         async function deleteLikeFromTweet(l, tw) {
             tw.tweetLikes.remove(l);
