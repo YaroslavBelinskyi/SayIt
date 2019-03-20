@@ -5,7 +5,7 @@ const { Tweet } = require('../models/tweets');
 
 const router = express.Router();
 
-router.patch('/like/:tweetId', async (req, res) => {
+router.post('/like/:tweetId', async (req, res) => {
     const { error } = validateTweetLike(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -15,12 +15,12 @@ router.patch('/like/:tweetId', async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetId);
     if (!tweet) return res.status(400).send('Tweet was not found.');
 
-    const tweetWithLike = await TweetLike.findOne({
+    const tweetHasLike = await TweetLike.findOne({
         tweet: req.params.tweetId,
         user: req.body.userId,
     });
-    console.log(tweetWithLike);
-    if (!tweetWithLike) {
+    console.log(tweetHasLike);
+    if (!tweetHasLike) {
         const tweetLike = new TweetLike({
             user: req.body.userId,
             tweet: req.params.tweetId,
@@ -29,8 +29,14 @@ router.patch('/like/:tweetId', async (req, res) => {
             tw.tweetLikes.push(l);
             await tw.save();
         }
+        async function addLiketoUser(l, u) {
+            u.favorites.push(l);
+            await u.save();
+        }
         await addLiketoTweet(tweetLike, tweet);
+        await addLiketoUser(tweetLike, user);
         await tweetLike.save();
+
         const modifiedTweet = await Tweet.findById(req.params.tweetId).populate({
             path: 'tweetLikes',
             populate: {
@@ -49,7 +55,12 @@ router.patch('/like/:tweetId', async (req, res) => {
             tw.tweetLikes.remove(l);
             await tw.save();
         }
-        deleteLikeFromTweet(like, tweetObj);
+        async function deleteLikeFromUser(l, u) {
+            u.favorites.remove(l);
+            await u.save();
+        }
+        await deleteLikeFromTweet(like, tweetObj);
+        await deleteLikeFromUser(like, user);
         res.send('Like was removed.');
     }
 });

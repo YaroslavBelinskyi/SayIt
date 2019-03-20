@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Tweet',
     }],
+    favorites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TweetLike',
+    }],
 });
 
 userSchema.methods.generateAuthToken = function () {
