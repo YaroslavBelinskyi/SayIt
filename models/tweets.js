@@ -16,7 +16,10 @@ const tweetSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TweetLike',
     }],
-    // comments: [schema]
+    tweetComments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TweetComment',
+    }],
     numberOfLikes: {
         default: 0,
         type: Number,

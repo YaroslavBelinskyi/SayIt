@@ -27,6 +27,7 @@ router.post('/like/:tweetId', async (req, res) => {
         });
         async function addLiketoTweet(l, tw) {
             tw.tweetLikes.push(l);
+            tw.numberOfLikes += 1;
             await tw.save();
         }
         async function addLiketoUser(l, u) {

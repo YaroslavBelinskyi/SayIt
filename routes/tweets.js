@@ -31,7 +31,7 @@ router.post('/create', async (req, res) => {
     async function addTweetToUser(uId, tw) {
         const userObj = await User.findById(uId);
         userObj.tweets.push(tw._id);
-        userObj.save();
+        await userObj.save();
     }
     addTweetToUser(user._id, tweet);
     tweet = await tweet.save();
@@ -47,7 +47,7 @@ router.delete('/:id', async (req, res) => {
 
     async function removeTweetFromUser(u) {
         await u.tweets.remove(req.params.id);
-        u.save();
+        await u.save();
     }
 
     removeTweetFromUser(user);

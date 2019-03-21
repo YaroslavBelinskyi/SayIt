@@ -20,7 +20,25 @@ router.post('/:tweetId', async (req, res) => {
         commentText: req.body.commentText,
         tweet: req.params.tweetId,
     });
-    tweetComment.save();
-    res.send(tweetComment);
+
+    async function addTweetToComment(tw, com) {
+        tw.tweetComments.push(com);
+        tw.numberOfComments += 1;
+        await tw.save();
+    }
+
+    addTweetToComment(tweet, tweetComment);
+    await tweetComment.save();
+    const tweetWithComment = await TweetComment.findById(tweetComment._id)
+        .populate({
+            path: 'user',
+            select: 'firstName lastName',
+        })
+        .populate({
+            path: 'tweet',
+            select: 'numberOfComments',
+        });
+    res.send(tweetWithComment);
 });
+
 module.exports = router;
