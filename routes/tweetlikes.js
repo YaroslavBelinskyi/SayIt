@@ -19,7 +19,7 @@ router.post('/like/:tweetId', async (req, res) => {
         tweet: req.params.tweetId,
         user: req.body.userId,
     });
-    console.log(tweetHasLike);
+
     if (!tweetHasLike) {
         const tweetLike = new TweetLike({
             user: req.body.userId,

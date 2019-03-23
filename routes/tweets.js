@@ -14,6 +14,14 @@ router.get('/all', async (req, res) => {
     res.send(tweets);
 });
 
+router.get('/favorites/:id', async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    const favorites = await User.findById(req.params.id).populate('favorites');
+    res.send(favorites);
+});
+
 router.post('/create', async (req, res) => {
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);

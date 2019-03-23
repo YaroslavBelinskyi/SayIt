@@ -5,6 +5,16 @@ const { Tweet } = require('../models/tweets');
 
 const router = express.Router();
 
+router.get('/:tweetId', async (req, res) => {
+    const comments = await TweetComment.find({
+        tweet: req.params.tweetId,
+    }).populate({
+        path: 'user',
+        select: 'firstName lastName',
+    });
+    res.send(comments);
+});
+
 router.post('/:tweetId', async (req, res) => {
     const { error } = validateTweetComment(req.body);
     if (error) return res.status(400).send(error.details[0].message);
@@ -39,6 +49,23 @@ router.post('/:tweetId', async (req, res) => {
             select: 'numberOfComments',
         });
     res.send(tweetWithComment);
+});
+
+router.delete('/:tweetId', async (req, res) => {
+    const tweet = await Tweet.findById(req.params.tweetId);
+    if (!tweet) return res.status(400).send('Tweet was not found.');
+
+    const tweetComment = await TweetComment.findByIdAndDelete(req.body.commentId);
+    if (!tweetComment) return res.status(400).send('Comment was not found');
+
+    async function deleteCommentFromTweet(tw, com) {
+        await tw.tweetComments.remove(com);
+        tw.numberOfComments -= 1;
+        await tw.save();
+    }
+
+    deleteCommentFromTweet(tweet, req.body.commentId);
+    res.send(tweetComment);
 });
 
 module.exports = router;

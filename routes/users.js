@@ -1,6 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { User, validateUser } = require('../models/users');
+const { User, validateUser, validateUserUpdate } = require('../models/users');
+const { Tweet } = require('../models/tweets');
+const { TweetComment } = require('../models/tweetcomments');
+const { TweetLike } = require('../models/tweetlikes');
 
 const router = express.Router();
 
@@ -47,6 +50,61 @@ router.post('/', async (req, res) => {
         userName: user.userName,
         email: user.email,
     });
+});
+
+router.patch('/:id', async (req, res) => {
+    const { error } = validateUserUpdate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    const checkEmail = await User.findOne({ email: req.body.email });
+    if (checkEmail) return res.status(400).send('Email is already taken.');
+
+    const checkUserName = await User.findOne({ userName: req.body.userName });
+    if (checkUserName) return res.status(400).send('Username is already taken.');
+
+    const editedUser = await User.findByIdAndUpdate(req.params.id, {
+        userName: req.body.userName,
+        email: req.body.email,
+        password: req.body.password,
+        DOB: req.body.DOB,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+    }, { new: true });
+    if (!editedUser) return res.status(400).send('Invalid user.');
+
+    res.send(editedUser);
+});
+
+router.delete('/:id', async (req, res) => {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(400).send('Ivalid user.');
+
+    await Tweet.deleteMany({
+        user: req.params.id,
+    });
+    await TweetComment.deleteMany({
+        user: req.params.id,
+    });
+    await TweetLike.deleteMany({
+        user: req.params.id,
+    });
+
+    // const tweets = Tweet.find().populate({ 
+    //     path: 'tweetComments',
+    // });
+    // async function deleteAllCommentsFromTweets(tw, com) {
+    //     await tw.tweetComments.remove(com);
+    //     tw.numberOfComments -= 1;
+    //     await tw.save();
+    // }
+    // async function deleteAllLikesFromTweet(l, tw) {
+    //     tw.tweetLikes.remove(l);
+    //     await tw.save();
+    // }
+    // deleteAllCommentsFromTweets(tweet, req.body.commentId);
+    // deleteAllLikesFromTweet(like, tweetObj);
+
+    res.send(user);
 });
 
 module.exports = router;
