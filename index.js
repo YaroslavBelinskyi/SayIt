@@ -17,7 +17,8 @@ if (!config.get('jwtPrivateKey')) {
     process.exit(1);
 }
 
-mongoose.connect('mongodb://localhost/SayIt')
+const db = config.get('db');
+mongoose.connect(db)
     .then(() => console.log('Connected to MongoDB...'))
     .catch(() => console.log('Could not connect to MongoDB...'));
 

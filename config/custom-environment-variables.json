@@ -1,3 +1,4 @@
 {
-    "jwtPrivateKey": "sayit_jwtPrivateKey"
+    "jwtPrivateKey": "sayit_jwtPrivateKey",
+    "db": "sayit_db"
 }

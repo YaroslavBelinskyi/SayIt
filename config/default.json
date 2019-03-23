@@ -1,3 +1,4 @@
 {
-    "jwtPrivateKey": "asd"
+    "jwtPrivateKey": "asd",
+    "db": "mongodb://localhost/SayIt"
 }
