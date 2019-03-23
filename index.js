@@ -8,6 +8,9 @@ const tweetLikes = require('./routes/tweetlikes');
 const tweetComments = require('./routes/tweetcomments');
 
 const app = express();
+
+require('./startup/prod')(app);
+
 const PORT = process.env.PORT || 3000;
 if (!config.get('jwtPrivateKey')) {
     console.error('FATAL ERROR: jwtPrivateKey is not defined.');

@@ -89,7 +89,7 @@ router.delete('/:id', async (req, res) => {
         user: req.params.id,
     });
 
-    // const tweets = Tweet.find().populate({ 
+    // const tweets = Tweet.find().populate({
     //     path: 'tweetComments',
     // });
     // async function deleteAllCommentsFromTweets(tw, com) {
