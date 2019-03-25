@@ -2,10 +2,11 @@ const express = require('express');
 const { TweetComment, validateTweetComment } = require('../models/tweetcomments');
 const { User } = require('../models/users');
 const { Tweet } = require('../models/tweets');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:tweetId', async (req, res) => {
+router.get('/:tweetId', auth, async (req, res) => {
     const comments = await TweetComment.find({
         tweet: req.params.tweetId,
     }).populate({
@@ -15,7 +16,7 @@ router.get('/:tweetId', async (req, res) => {
     res.send(comments);
 });
 
-router.post('/:tweetId', async (req, res) => {
+router.post('/:tweetId', auth, async (req, res) => {
     const { error } = validateTweetComment(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -51,7 +52,7 @@ router.post('/:tweetId', async (req, res) => {
     res.send(tweetWithComment);
 });
 
-router.delete('/:tweetId', async (req, res) => {
+router.delete('/:tweetId', auth, async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetId);
     if (!tweet) return res.status(400).send('Tweet was not found.');
 

@@ -2,10 +2,11 @@ const express = require('express');
 const { TweetLike, validateTweetLike } = require('../models/tweetlikes');
 const { User } = require('../models/users');
 const { Tweet } = require('../models/tweets');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/like/:tweetId', async (req, res) => {
+router.post('/like/:tweetId', auth, async (req, res) => {
     const { error } = validateTweetLike(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 

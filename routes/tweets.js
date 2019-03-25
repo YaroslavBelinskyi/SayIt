@@ -3,6 +3,7 @@ const {
     Tweet, validateTweet, validateTweetEditing,
 } = require('../models/tweets');
 const { User } = require('../models/users');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/all', async (req, res) => {
     res.send(tweets);
 });
 
-router.get('/favorites/:id', async (req, res) => {
+router.get('/favorites/:id', auth, async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(400).send('Invalid user.');
 
@@ -22,7 +23,7 @@ router.get('/favorites/:id', async (req, res) => {
     res.send(favorites);
 });
 
-router.post('/create', async (req, res) => {
+router.post('/create', auth, async (req, res) => {
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -46,7 +47,7 @@ router.post('/create', async (req, res) => {
     res.send(tweet);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     const tweet = await Tweet.findByIdAndDelete(req.params.id);
     if (!tweet) return res.status(400).send('Tweet was not found.');
 
@@ -68,7 +69,7 @@ router.get('/:id', async (req, res) => {
     res.send(tweet);
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     const { error } = validateTweetEditing(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 

@@ -4,6 +4,7 @@ const { User, validateUser, validateUserUpdate } = require('../models/users');
 const { Tweet } = require('../models/tweets');
 const { TweetComment } = require('../models/tweetcomments');
 const { TweetLike } = require('../models/tweetlikes');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -52,9 +53,12 @@ router.post('/', async (req, res) => {
     });
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
     const { error } = validateUserUpdate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(400).send('Invalid user.');
 
     const checkEmail = await User.findOne({ email: req.body.email });
     if (checkEmail) return res.status(400).send('Email is already taken.');
@@ -70,12 +74,14 @@ router.patch('/:id', async (req, res) => {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
     }, { new: true });
-    if (!editedUser) return res.status(400).send('Invalid user.');
+    const salt = await bcrypt.genSalt(8);
+    editedUser.password = await bcrypt.hash(editedUser.password, salt);
+    await editedUser.save();
 
     res.send(editedUser);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(400).send('Ivalid user.');
 
