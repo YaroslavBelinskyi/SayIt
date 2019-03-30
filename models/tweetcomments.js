@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Joi = require('joi');
+Joi.objectId = require('joi-objectid')(Joi);
 
 const tweetCommentSchema = new mongoose.Schema({
     user: {
@@ -26,7 +27,7 @@ const TweetComment = mongoose.model('TweetComment', tweetCommentSchema);
 
 function validateTweetComment(tweetComment) {
     const schema = {
-        userId: Joi.string().required(),
+        userId: Joi.objectId().required(),
         commentText: Joi.string().min(1).max(322).required(),
     };
     return Joi.validate(tweetComment, schema);

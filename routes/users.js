@@ -81,6 +81,49 @@ router.patch('/:id', auth, async (req, res) => {
     res.send(editedUser);
 });
 
+router.post('/:id/follow', auth, async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) return res.status(400).send('Invalid user.');
+
+    const isFollowed = await User.findOne({
+        _id: req.userId,
+        followings: req.params.id,
+    });
+    console.log(isFollowed);
+    if (!isFollowed) {
+        async function addUserToFollowings(u, userToFollow) {
+            u.followings.push(userToFollow);
+            u.numberOfFollowings += 1;
+            await u.save();
+        }
+        async function addUserToFollowers(u, followerUser) {
+            u.followers.push(followerUser);
+            u.numberOfFollowers += 1;
+            await u.save();
+        }
+        await addUserToFollowings(currentUser, user);
+        await addUserToFollowers(user, currentUser);
+        res.send(user);
+    } else {
+        async function unfollowUser(u, userToUnfollow) {
+            u.followings.remove(userToUnfollow);
+            u.numberOfFollowings -= 1;
+            await u.save();
+        }
+        async function deleteUserFromFollowers(u, followerUser) {
+            u.followers.remove(followerUser);
+            u.numberOfFollowers -= 1;
+            await u.save();
+        }
+        await unfollowUser(currentUser, user);
+        await deleteUserFromFollowers(user, currentUser);
+        res.send(user);
+    }
+});
+
 router.delete('/:id', auth, async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(400).send('Ivalid user.');

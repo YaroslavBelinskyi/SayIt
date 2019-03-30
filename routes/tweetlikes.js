@@ -55,6 +55,7 @@ router.post('/like/:tweetId', auth, async (req, res) => {
         });
         async function deleteLikeFromTweet(l, tw) {
             tw.tweetLikes.remove(l);
+            tw.numberOfLikes -= 1;
             await tw.save();
         }
         async function deleteLikeFromUser(l, u) {

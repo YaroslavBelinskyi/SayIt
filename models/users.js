@@ -45,6 +45,22 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TweetLike',
     }],
+    followers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    }],
+    followings: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    }],
+    numberOfFollowers: {
+        type: Number,
+        default: 0,
+    },
+    numberOfFollowings: {
+        type: Number,
+        default: 0,
+    },
 });
 
 userSchema.methods.generateAuthToken = function () {
