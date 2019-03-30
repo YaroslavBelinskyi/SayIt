@@ -15,6 +15,31 @@ router.get('/all', async (req, res) => {
     res.send(tweets);
 });
 
+router.get('/feed', auth, async (req, res) => {
+    const allTweets = await User.findById(req.userId)
+        .select('followings -_id')
+        .populate({
+            path: 'followings',
+            select: 'tweets',
+            populate: {
+                path: 'tweets',
+                select: 'tweetText creationDate',
+                populate: {
+                    path: 'user',
+                    select: 'firstName lastName',
+                },
+            },
+        });
+    const feed = [];
+    allTweets.followings.forEach((e) => {
+        e.tweets.forEach((e1) => {
+            feed.push(e1);
+        });
+    });
+    const sortedFeed = feed.sort((a, b) => b.creationDate - a.creationDate);
+    res.send(sortedFeed);
+});
+
 router.get('/favorites/:id', auth, async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(400).send('Invalid user.');
