@@ -27,7 +27,6 @@ const TweetComment = mongoose.model('TweetComment', tweetCommentSchema);
 
 function validateTweetComment(tweetComment) {
     const schema = {
-        userId: Joi.objectId().required(),
         commentText: Joi.string().min(1).max(322).required(),
     };
     return Joi.validate(tweetComment, schema);

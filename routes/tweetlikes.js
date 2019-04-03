@@ -1,5 +1,5 @@
 const express = require('express');
-const { TweetLike, validateTweetLike } = require('../models/tweetlikes');
+const { TweetLike } = require('../models/tweetlikes');
 const { User } = require('../models/users');
 const { Tweet } = require('../models/tweets');
 const auth = require('../middleware/auth');
@@ -7,10 +7,10 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/like/:tweetId', auth, async (req, res) => {
-    const { error } = validateTweetLike(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
+    // const { error } = validateTweetLike(req.body);
+    // if (error) return res.status(400).send(error.details[0].message);
 
-    const user = await User.findById(req.body.userId);
+    const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
     const tweet = await Tweet.findById(req.params.tweetId);
@@ -18,12 +18,12 @@ router.post('/like/:tweetId', auth, async (req, res) => {
 
     const tweetHasLike = await TweetLike.findOne({
         tweet: req.params.tweetId,
-        user: req.body.userId,
+        user: req.userId,
     });
 
     if (!tweetHasLike) {
         const tweetLike = new TweetLike({
-            user: req.body.userId,
+            user: req.userId,
             tweet: req.params.tweetId,
         });
         async function addLiketoTweet(l, tw) {
@@ -50,7 +50,7 @@ router.post('/like/:tweetId', auth, async (req, res) => {
     } else {
         const tweetObj = await Tweet.findById(req.params.tweetId);
         const like = await TweetLike.findOneAndDelete({
-            user: req.body.userId,
+            user: req.userId,
             tweet: req.params.tweetId,
         });
         async function deleteLikeFromTweet(l, tw) {

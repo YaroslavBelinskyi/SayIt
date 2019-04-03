@@ -9,15 +9,6 @@ const tweetLikes = require('./routes/tweetlikes');
 const tweetComments = require('./routes/tweetcomments');
 
 const app = express();
-
-app.use(cors({
-    allowedHeaders: ['sessionId', 'Content-Type'],
-    exposedHeaders: ['sessionId'],
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    preflightContinue: false,
-}));
-
 require('./startup/prod')(app);
 
 const PORT = process.env.PORT || 3000;
@@ -31,7 +22,13 @@ mongoose.connect(db)
     .then(() => console.log('Connected to MongoDB...'))
     .catch(() => console.log('Could not connect to MongoDB...'));
 
-
+app.use(cors({
+    allowedHeaders: ['sessionId', 'Content-Type'],
+    exposedHeaders: ['sessionId'],
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+}));
 app.use(express.json());
 app.use('/api/users', users);
 app.use('/api/auth', auth);

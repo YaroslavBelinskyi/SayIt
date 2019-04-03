@@ -53,11 +53,11 @@ router.post('/', async (req, res) => {
     });
 });
 
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/update', auth, async (req, res) => {
     const { error } = validateUserUpdate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
     const checkEmail = await User.findOne({ email: req.body.email });
@@ -66,7 +66,7 @@ router.patch('/:id', auth, async (req, res) => {
     const checkUserName = await User.findOne({ userName: req.body.userName });
     if (checkUserName) return res.status(400).send('Username is already taken.');
 
-    const editedUser = await User.findByIdAndUpdate(req.params.id, {
+    const editedUser = await User.findByIdAndUpdate(req.userId, {
         userName: req.body.userName,
         email: req.body.email,
         password: req.body.password,
@@ -148,7 +148,7 @@ router.get('/:id/followings', async (req, res) => {
 });
 
 router.delete('/:id', auth, async (req, res) => {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findByIdAndDelete(req.userId);
     if (!user) return res.status(400).send('Ivalid user.');
 
     await Tweet.deleteMany({

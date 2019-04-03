@@ -1,17 +1,15 @@
 const express = require('express');
-const {
-    Tweet, validateTweet, validateTweetEditing,
-} = require('../models/tweets');
+const { Tweet, validateTweet, validateTweetEditing } = require('../models/tweets');
 const { User } = require('../models/users');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/all', async (req, res) => {
-    const user = await User.findById(req.body.userId);
+router.get('/:id/all', async (req, res) => {
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(400).send('Invalid user.');
 
-    const tweets = await Tweet.find({ user: req.body.userId }).sort('-creationDate');
+    const tweets = await Tweet.find({ user: req.params.id }).sort('-creationDate');
     res.send(tweets);
 });
 
@@ -44,7 +42,14 @@ router.get('/favorites/:id', auth, async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(400).send('Invalid user.');
 
-    const favorites = await User.findById(req.params.id).populate('favorites');
+    const favorites = await User.findById(req.params.id).select('favorites')
+        .populate({
+            path: 'favorites',
+            populate: {
+                path: 'tweet',
+                select: '-tweetLikes -tweetComments',
+            },
+        });
     res.send(favorites);
 });
 
@@ -52,7 +57,7 @@ router.post('/create', auth, async (req, res) => {
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const user = await User.findById(req.body.userId);
+    const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
     let tweet = new Tweet({
@@ -73,7 +78,10 @@ router.post('/create', auth, async (req, res) => {
 });
 
 router.delete('/:id', auth, async (req, res) => {
-    const tweet = await Tweet.findByIdAndDelete(req.params.id);
+    let tweet = await Tweet.findById(req.params.id);
+    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+
+    tweet = await Tweet.findByIdAndDelete(req.params.id);
     if (!tweet) return res.status(400).send('Tweet was not found.');
 
     const user = await User.findById(tweet.user);
@@ -83,6 +91,8 @@ router.delete('/:id', auth, async (req, res) => {
         await u.tweets.remove(req.params.id);
         await u.save();
     }
+
+    // need to add deleting all comments and all likes and favorites.
 
     removeTweetFromUser(user);
     res.send(tweet);
@@ -95,6 +105,9 @@ router.get('/:id', async (req, res) => {
 });
 
 router.patch('/:id', auth, async (req, res) => {
+    const tweet = await Tweet.findById(req.params.id);
+    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+
     const { error } = validateTweetEditing(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 

@@ -39,7 +39,6 @@ const Tweet = mongoose.model('Tweet', tweetSchema);
 
 function validateTweet(tweet) {
     const schema = {
-        userId: Joi.objectId().required(),
         tweetText: Joi.string().min(1).max(322).required(),
         listOfLikes: Joi.array(),
     };
