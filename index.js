@@ -1,6 +1,7 @@
 const express = require('express');
 const config = require('config');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const users = require('./routes/users');
 const auth = require('./routes/auth');
 const tweets = require('./routes/tweets');
@@ -8,6 +9,14 @@ const tweetLikes = require('./routes/tweetlikes');
 const tweetComments = require('./routes/tweetcomments');
 
 const app = express();
+
+app.use(cors({
+    allowedHeaders: ['sessionId', 'Content-Type'],
+    exposedHeaders: ['sessionId'],
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+}));
 
 require('./startup/prod')(app);
 
