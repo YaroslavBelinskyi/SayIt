@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Like\unlike certain tweet by the current logged user and add\remove it to\from his favorites.
 router.post('/like/:tweetid', auth, async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');

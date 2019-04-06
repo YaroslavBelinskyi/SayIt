@@ -6,7 +6,8 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:tweetid', auth, async (req, res) => {
+// Get the list of all comments of the certain tweet.
+router.get('/all/:tweetid', auth, async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
 
@@ -22,7 +23,8 @@ router.get('/:tweetid', auth, async (req, res) => {
     res.send(comments);
 });
 
-router.post('/:tweetid', auth, async (req, res) => {
+// Create a new comment for the certain tweet from the current logged user.
+router.post('/create/:tweetid', auth, async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
 
@@ -64,7 +66,8 @@ router.post('/:tweetid', auth, async (req, res) => {
     res.send(tweetWithComment);
 });
 
-router.patch('/:commentid', auth, async (req, res) => {
+// Update the comment of the certain tweet if it was created by the current logged user.
+router.patch('/update/:commentid', auth, async (req, res) => {
     const { error } = validateTweetComment(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -74,11 +77,11 @@ router.patch('/:commentid', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
-    let tweetComment = await TweetComment.findById(req.params.commentId);
+    let tweetComment = await TweetComment.findById(req.params.commentid);
     if (!tweetComment) return res.status(400).send('Comment was not found');
 
     if (JSON.stringify(tweetComment.user) === JSON.stringify(req.userId)) {
-        tweetComment = await TweetComment.findByIdAndUpdate(req.params.commentId,
+        tweetComment = await TweetComment.findByIdAndUpdate(req.params.commentid,
             { commentText: req.body.commentText }, { new: true });
         res.send(tweetComment);
     } else {
@@ -86,7 +89,8 @@ router.patch('/:commentid', auth, async (req, res) => {
     }
 });
 
-router.delete('/:commentid', auth, async (req, res) => {
+// Delete the comment if it was created under current logged user's tweet or by the current user.
+router.delete('/delete/:commentid', auth, async (req, res) => {
     async function deleteCommentFromTweet(tw, com) {
         console.log(tw.tweetComments);
         await tw.tweetComments.remove(com);

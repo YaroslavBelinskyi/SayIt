@@ -10,11 +10,13 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-    const users = await User.find().sort('userName');
+// Get the list of all users.
+router.get('/all', async (req, res) => {
+    const users = await User.find().sort('-numberOfFollowers');
     res.send(users);
 });
 
+// Get one user.
 router.get('/:userid', async (req, res) => {
     const isValidId = validateId(req.params.userid);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
@@ -26,7 +28,8 @@ router.get('/:userid', async (req, res) => {
     res.send(user);
 });
 
-router.post('/', async (req, res) => {
+// Create new user.
+router.post('/new', async (req, res) => {
     const { error } = validateUser(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -58,7 +61,8 @@ router.post('/', async (req, res) => {
     });
 });
 
-router.patch('/update', auth, async (req, res) => {
+// Update information of the current logged user.
+router.patch('/updateme', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
@@ -86,7 +90,8 @@ router.patch('/update', auth, async (req, res) => {
     res.send(editedUser);
 });
 
-router.post('/:userid/follow', auth, async (req, res) => {
+// Follow one certain user.
+router.post('/follow/:userid', auth, async (req, res) => {
     const isValidId = validateId(req.params.userid);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
@@ -136,7 +141,8 @@ router.post('/:userid/follow', auth, async (req, res) => {
     }
 });
 
-router.get('/:userid/followers', async (req, res) => {
+// Get the list of all followers of the certain user.
+router.get('/followers/:userid', async (req, res) => {
     const isValidId = validateId(req.params.userid);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
@@ -150,7 +156,8 @@ router.get('/:userid/followers', async (req, res) => {
     res.send(user);
 });
 
-router.get('/:userid/followings', async (req, res) => {
+// Get the list of all followings of the certain user.
+router.get('/followings/:userid', async (req, res) => {
     const isValidId = validateId(req.params.userid);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
@@ -164,7 +171,8 @@ router.get('/:userid/followings', async (req, res) => {
     res.send(user);
 });
 
-router.delete('/me', auth, async (req, res) => {
+// Delete current logged user.
+router.delete('/deleteme', auth, async (req, res) => {
     const isValidCurrentId = validateId(req.userId);
     if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
 

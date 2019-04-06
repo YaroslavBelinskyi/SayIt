@@ -5,7 +5,8 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/:userid/all', async (req, res) => {
+// Get the list of all tweets of certain user.
+router.get('/all/:userid', async (req, res) => {
     const isValidId = validateId(req.params.userid);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
@@ -16,6 +17,7 @@ router.get('/:userid/all', async (req, res) => {
     res.send(tweets);
 });
 
+// Get the feed with all tweets of folowing users for the current logged user.
 router.get('/feed', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
@@ -44,6 +46,7 @@ router.get('/feed', auth, async (req, res) => {
     res.send(sortedFeed);
 });
 
+// Get the list of all favorites tweets (liked tweets) for the current user.
 router.get('/favorites', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
@@ -62,6 +65,7 @@ router.get('/favorites', auth, async (req, res) => {
     res.send(favorites);
 });
 
+// Create a new tweet for the current logged user.
 router.post('/create', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
@@ -89,7 +93,8 @@ router.post('/create', auth, async (req, res) => {
     res.send(tweet);
 });
 
-router.delete('/:tweetid', auth, async (req, res) => {
+// Delete certain tweet created by the current logged user.
+router.delete('/delete/:tweetid', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
@@ -116,6 +121,7 @@ router.delete('/:tweetid', auth, async (req, res) => {
     res.send(tweet);
 });
 
+// Get the certain tweet.
 router.get('/:tweetid', async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
@@ -125,7 +131,8 @@ router.get('/:tweetid', async (req, res) => {
     res.send(tweet);
 });
 
-router.patch('/:tweetid', auth, async (req, res) => {
+// Update certain tweet created by the current logged user.
+router.patch('/update/:tweetid', auth, async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
 
