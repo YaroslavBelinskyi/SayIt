@@ -1,30 +1,33 @@
 const express = require('express');
 const { TweetLike } = require('../models/tweetlikes');
-const { User } = require('../models/users');
+const { User, validateId } = require('../models/users');
 const { Tweet } = require('../models/tweets');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/like/:tweetId', auth, async (req, res) => {
-    // const { error } = validateTweetLike(req.body);
-    // if (error) return res.status(400).send(error.details[0].message);
+router.post('/like/:tweetid', auth, async (req, res) => {
+    const isValidTweetId = validateId(req.params.tweetid);
+    if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
+
+    const isValidId = validateId(req.userId);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
 
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
-    const tweet = await Tweet.findById(req.params.tweetId);
+    const tweet = await Tweet.findById(req.params.tweetid);
     if (!tweet) return res.status(400).send('Tweet was not found.');
 
     const tweetHasLike = await TweetLike.findOne({
-        tweet: req.params.tweetId,
+        tweet: req.params.tweetid,
         user: req.userId,
     });
 
     if (!tweetHasLike) {
         const tweetLike = new TweetLike({
             user: req.userId,
-            tweet: req.params.tweetId,
+            tweet: req.params.tweetid,
         });
         async function addLiketoTweet(l, tw) {
             tw.tweetLikes.push(l);
@@ -39,7 +42,7 @@ router.post('/like/:tweetId', auth, async (req, res) => {
         await addLiketoUser(tweetLike, user);
         await tweetLike.save();
 
-        const modifiedTweet = await Tweet.findById(req.params.tweetId).populate({
+        const modifiedTweet = await Tweet.findById(req.params.tweetid).populate({
             path: 'tweetLikes',
             populate: {
                 path: 'user',
@@ -48,10 +51,10 @@ router.post('/like/:tweetId', auth, async (req, res) => {
         });
         res.send(modifiedTweet);
     } else {
-        const tweetObj = await Tweet.findById(req.params.tweetId);
+        const tweetObj = await Tweet.findById(req.params.tweetid);
         const like = await TweetLike.findOneAndDelete({
             user: req.userId,
-            tweet: req.params.tweetId,
+            tweet: req.params.tweetid,
         });
         async function deleteLikeFromTweet(l, tw) {
             tw.tweetLikes.remove(l);

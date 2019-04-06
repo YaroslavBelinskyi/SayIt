@@ -94,6 +94,11 @@ function validateUserUpdate(user) {
     return Joi.validate(user, schema);
 }
 
+function validateId(id) {
+    return mongoose.Types.ObjectId.isValid(id);
+}
+
 exports.User = User;
 exports.validateUser = validateUser;
 exports.validateUserUpdate = validateUserUpdate;
+exports.validateId = validateId;

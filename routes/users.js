@@ -1,6 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { User, validateUser, validateUserUpdate } = require('../models/users');
+const {
+    User, validateUser, validateUserUpdate, validateId,
+} = require('../models/users');
 const { Tweet } = require('../models/tweets');
 const { TweetComment } = require('../models/tweetcomments');
 const { TweetLike } = require('../models/tweetlikes');
@@ -13,11 +15,14 @@ router.get('/', async (req, res) => {
     res.send(users);
 });
 
-router.get('/:id', async (req, res) => {
-    let user = await User.findById(req.params.id);
+router.get('/:userid', async (req, res) => {
+    const isValidId = validateId(req.params.userid);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
+
+    let user = await User.findById(req.params.userid);
     if (!user) return res.status(400).send('Invalid user.');
 
-    user = await User.findById(req.params.id).populate('tweets');
+    user = await User.findById(req.params.userid).populate('tweets');
     res.send(user);
 });
 
@@ -54,11 +59,11 @@ router.post('/', async (req, res) => {
 });
 
 router.patch('/update', auth, async (req, res) => {
-    const { error } = validateUserUpdate(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
+
+    const { error } = validateUserUpdate(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
 
     const checkEmail = await User.findOne({ email: req.body.email });
     if (checkEmail) return res.status(400).send('Email is already taken.');
@@ -81,18 +86,24 @@ router.patch('/update', auth, async (req, res) => {
     res.send(editedUser);
 });
 
-router.post('/:id/follow', auth, async (req, res) => {
-    const user = await User.findById(req.params.id);
+router.post('/:userid/follow', auth, async (req, res) => {
+    const isValidId = validateId(req.params.userid);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
+
+    const user = await User.findById(req.params.userid);
     if (!user) return res.status(400).send('Invalid user.');
+
+    const isValidCurrentId = validateId(req.userId);
+    if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
 
     const currentUser = await User.findById(req.userId);
     if (!currentUser) return res.status(400).send('Invalid user.');
 
-    if (req.params.id === req.userId) return res.status(400).send('You cannot follow yourself.');
+    if (req.params.userid === req.userId) return res.status(400).send('You cannot follow yourself.');
 
     const isFollowed = await User.findOne({
         _id: req.userId,
-        followings: req.params.id,
+        followings: req.params.userid,
     });
     if (!isFollowed) {
         async function addUserToFollowings(u, userToFollow) {
@@ -125,8 +136,11 @@ router.post('/:id/follow', auth, async (req, res) => {
     }
 });
 
-router.get('/:id/followers', async (req, res) => {
-    const user = await User.findById(req.params.id)
+router.get('/:userid/followers', async (req, res) => {
+    const isValidId = validateId(req.params.userid);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
+
+    const user = await User.findById(req.params.userid)
         .select('followers, numberOfFollowers')
         .populate({
             path: 'followers',
@@ -136,8 +150,11 @@ router.get('/:id/followers', async (req, res) => {
     res.send(user);
 });
 
-router.get('/:id/followings', async (req, res) => {
-    const user = await User.findById(req.params.id)
+router.get('/:userid/followings', async (req, res) => {
+    const isValidId = validateId(req.params.userid);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
+
+    const user = await User.findById(req.params.userid)
         .select('followings, numberOfFollowings')
         .populate({
             path: 'followings',
@@ -147,7 +164,10 @@ router.get('/:id/followings', async (req, res) => {
     res.send(user);
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/me', auth, async (req, res) => {
+    const isValidCurrentId = validateId(req.userId);
+    if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
+
     const user = await User.findByIdAndDelete(req.userId);
     if (!user) return res.status(400).send('Ivalid user.');
 
