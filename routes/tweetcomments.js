@@ -31,14 +31,14 @@ router.post('/create/:tweetid', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
-    const { error } = validateTweetComment(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
     const tweet = await Tweet.findById(req.params.tweetid);
     if (!tweet) return res.status(400).send('Tweet was not found.');
+
+    const { error } = validateTweetComment(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
 
     const tweetComment = new TweetComment({
         user: req.userId,
@@ -92,14 +92,13 @@ router.patch('/update/:commentid', auth, async (req, res) => {
 // Delete the comment if it was created under current logged user's tweet or by the current user.
 router.delete('/delete/:commentid', auth, async (req, res) => {
     async function deleteCommentFromTweet(tw, com) {
-        console.log(tw.tweetComments);
         await tw.tweetComments.remove(com);
         tw.numberOfComments -= 1;
         await tw.save();
     }
 
     const isValidCommentId = validateId(req.params.commentid);
-    if (!isValidCommentId) return res.status(400).send('Invalid tweet ID.');
+    if (!isValidCommentId) return res.status(400).send('Invalid comment ID.');
 
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');

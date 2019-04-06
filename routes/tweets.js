@@ -70,26 +70,25 @@ router.post('/create', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
-    const { error } = validateTweet(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
-    let tweet = new Tweet({
+    const { error } = validateTweet(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    const tweet = new Tweet({
         user: {
             _id: user._id,
         },
         tweetText: req.body.tweetText,
     });
 
-    async function addTweetToUser(uId, tw) {
-        const userObj = await User.findById(uId);
-        userObj.tweets.push(tw._id);
-        await userObj.save();
+    async function addTweetToUser(u, tw) {
+        u.tweets.push(tw._id);
+        await u.save();
     }
-    addTweetToUser(user._id, tweet);
-    tweet = await tweet.save();
+    addTweetToUser(user, tweet);
+    await tweet.save();
     res.send(tweet);
 });
 
@@ -102,16 +101,16 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
 
     let tweet = await Tweet.findById(req.params.tweetid);
+    if (!tweet) return res.status(400).send('Tweet was not found.');
     if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
 
     tweet = await Tweet.findByIdAndDelete(req.params.tweetid);
-    if (!tweet) return res.status(400).send('Tweet was not found.');
 
     const user = await User.findById(tweet.user);
     if (!user) return res.status(400).send('Invalid user.');
 
     async function removeTweetFromUser(u) {
-        await u.tweets.remove(req.params.tweetid);
+        u.tweets.remove(req.params.tweetid);
         await u.save();
     }
 
@@ -145,11 +144,11 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
     const { error } = validateTweetEditing(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const editedTweet = await Tweet.findByIdAndUpdate(req.params.tweetid,
+    const updatedTweet = await Tweet.findByIdAndUpdate(req.params.tweetid,
         { tweetText: req.body.newTweetText }, { new: true });
-    if (!editedTweet) return res.status(400).send('Tweet was not found.');
+    if (!updatedTweet) return res.status(400).send('Tweet was not found.');
 
-    res.send(editedTweet);
+    res.send(updatedTweet);
 });
 
 module.exports = router;

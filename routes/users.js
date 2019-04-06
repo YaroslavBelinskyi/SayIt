@@ -75,7 +75,7 @@ router.patch('/updateme', auth, async (req, res) => {
     const checkUserName = await User.findOne({ userName: req.body.userName });
     if (checkUserName) return res.status(400).send('Username is already taken.');
 
-    const editedUser = await User.findByIdAndUpdate(req.userId, {
+    const updatedUser = await User.findByIdAndUpdate(req.userId, {
         userName: req.body.userName,
         email: req.body.email,
         password: req.body.password,
@@ -84,10 +84,10 @@ router.patch('/updateme', auth, async (req, res) => {
         lastName: req.body.lastName,
     }, { new: true });
     const salt = await bcrypt.genSalt(8);
-    editedUser.password = await bcrypt.hash(editedUser.password, salt);
-    await editedUser.save();
+    updatedUser.password = await bcrypt.hash(updatedUser.password, salt);
+    await updatedUser.save();
 
-    res.send(editedUser);
+    res.send(updatedUser);
 });
 
 // Follow one certain user.
@@ -121,8 +121,8 @@ router.post('/follow/:userid', auth, async (req, res) => {
             u.numberOfFollowers += 1;
             await u.save();
         }
-        await addUserToFollowings(currentUser, user);
-        await addUserToFollowers(user, currentUser);
+        addUserToFollowings(currentUser, user);
+        addUserToFollowers(user, currentUser);
         res.send(user);
     } else {
         async function unfollowUser(u, userToUnfollow) {
@@ -135,8 +135,8 @@ router.post('/follow/:userid', auth, async (req, res) => {
             u.numberOfFollowers -= 1;
             await u.save();
         }
-        await unfollowUser(currentUser, user);
-        await deleteUserFromFollowers(user, currentUser);
+        unfollowUser(currentUser, user);
+        deleteUserFromFollowers(user, currentUser);
         res.send(user);
     }
 });
