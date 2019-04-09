@@ -1,7 +1,9 @@
+require('express-async-errors');
 const express = require('express');
 const config = require('config');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const error = require('./middleware/error');
 const users = require('./routes/users');
 const auth = require('./routes/auth');
 const tweets = require('./routes/tweets');
@@ -9,9 +11,15 @@ const tweetLikes = require('./routes/tweetlikes');
 const tweetComments = require('./routes/tweetcomments');
 
 const app = express();
+
 require('./startup/prod')(app);
 
 const PORT = process.env.PORT || 3000;
+
+process.on('unhandledRejection', (ex) => {
+    throw ex;
+});
+
 if (!config.get('jwtPrivateKey')) {
     console.error('FATAL ERROR: jwtPrivateKey is not defined.');
     process.exit(1);
@@ -35,5 +43,6 @@ app.use('/api/auth', auth);
 app.use('/api/tweets', tweets);
 app.use('/api/tweetlikes', tweetLikes);
 app.use('/api/tweetcomments', tweetComments);
+app.use(error);
 
 app.listen(PORT, () => console.log(`Listening to the port ${PORT}`));
