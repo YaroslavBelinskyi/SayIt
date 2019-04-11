@@ -1,5 +1,8 @@
 module.exports = {
-    "extends": "airbnb-base",
+    extends: "airbnb-base",
+    env: {
+        "node": true
+    },
     rules: {
         "no-console": "off",
         "indent": ["error", 4],
