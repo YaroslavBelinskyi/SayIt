@@ -1,5 +1,7 @@
+// const fs = require('fs');
 const express = require('express');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
 const {
     User, validateUser, validateUserUpdate, validateId,
 } = require('../models/users');
@@ -8,6 +10,7 @@ const { TweetComment } = require('../models/tweetcomments');
 const { TweetLike } = require('../models/tweetlikes');
 const auth = require('../middleware/auth');
 
+const upload = multer({ dest: 'profilePhotos/' });
 const router = express.Router();
 
 // Get the list of all users.
@@ -68,7 +71,16 @@ router.post('/new', async (req, res) => {
     });
 });
 
-// Update information of the current logged user.
+router.post('/uploadmyphoto', auth, upload.single('avatar'), async (req, res) => {
+    const user = await User.findByIdAndUpdate(req.userId, {
+        profilePhoto: req.file.filename,
+    }, { new: true });
+    if (!user) return res.status(400).send('Invalid user.');
+
+    res.send('Your profile photo is uploaded!');
+});
+
+// Update ALL information of the current logged user.
 router.patch('/updateme', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
@@ -90,8 +102,11 @@ router.patch('/updateme', auth, async (req, res) => {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
     }, { new: true });
-    const salt = await bcrypt.genSalt(8);
-    updatedUser.password = await bcrypt.hash(updatedUser.password, salt);
+
+    if (updatedUser.password) {
+        const salt = await bcrypt.genSalt(8);
+        updatedUser.password = await bcrypt.hash(updatedUser.password, salt);
+    }
     await updatedUser.save();
 
     res.send(updatedUser);
