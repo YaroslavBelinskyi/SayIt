@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Tweet',
     }],
+    numberOfTweets: {
+        type: Number,
+        default: 0,
+    },
     favorites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TweetLike',

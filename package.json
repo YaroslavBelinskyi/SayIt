@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./src/server.js",
-    "start ndm": "npx nodemon ./src/server.js"
+    "ndm": "npx nodemon ./src/server.js"
   },
   "engines": {
     "node": "v10.13.0"

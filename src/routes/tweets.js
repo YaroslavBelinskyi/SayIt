@@ -85,6 +85,7 @@ router.post('/create', auth, async (req, res) => {
 
     async function addTweetToUser(u, tw) {
         u.tweets.push(tw._id);
+        u.numberOfTweets += 1;
         await u.save();
     }
     addTweetToUser(user, tweet);
@@ -111,6 +112,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
 
     async function removeTweetFromUser(u) {
         u.tweets.remove(req.params.tweetid);
+        u.numberOfTweets -= 1;
         await u.save();
     }
 

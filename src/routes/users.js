@@ -12,7 +12,9 @@ const router = express.Router();
 
 // Get the list of all users.
 router.get('/all', async (req, res) => {
-    const users = await User.find().sort('-numberOfFollowers');
+    const users = await User.find()
+        .select('firstName lastName _id numberOfFollowers numberOfFollowings tweets')
+        .sort('-numberOfFollowers');
     res.send(users);
 });
 
@@ -24,7 +26,12 @@ router.get('/:userid', async (req, res) => {
     let user = await User.findById(req.params.userid);
     if (!user) return res.status(400).send('Invalid user.');
 
-    user = await User.findById(req.params.userid).populate('tweets');
+    user = await User.findById(req.params.userid)
+        .select('-password -__v -followings -followers -favorites -email')
+        .populate({
+            path: 'tweets',
+            select: '-tweetLikes -tweetComments -__v',
+        });
     res.send(user);
 });
 
