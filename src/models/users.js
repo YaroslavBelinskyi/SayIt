@@ -45,6 +45,14 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    retweets: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Retweet',
+    }],
+    numberOfRetweets: {
+        type: Number,
+        default: 0,
+    },
     favorites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TweetLike',
@@ -67,9 +75,11 @@ const userSchema = new mongoose.Schema({
     },
     profilePhoto: {
         type: String,
+        default: '',
     },
     profilePhotoId: {
         type: String,
+        default: '',
     },
 });
 

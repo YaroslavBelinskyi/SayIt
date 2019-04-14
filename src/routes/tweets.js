@@ -1,5 +1,5 @@
 const express = require('express');
-const { Tweet, validateTweet, validateTweetEditing } = require('../models/tweets');
+const { Tweet, validateTweet } = require('../models/tweets');
 const { User, validateId } = require('../models/users');
 const auth = require('../middleware/auth');
 
@@ -143,7 +143,7 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetid);
     if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
 
-    const { error } = validateTweetEditing(req.body);
+    const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
     const updatedTweet = await Tweet.findByIdAndUpdate(req.params.tweetid,

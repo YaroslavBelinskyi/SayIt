@@ -20,11 +20,19 @@ const tweetSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TweetComment',
     }],
+    retweets: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Retweet',
+    }],
     numberOfLikes: {
         default: 0,
         type: Number,
     },
     numberOfComments: {
+        default: 0,
+        type: Number,
+    },
+    numberOfRetweets: {
         default: 0,
         type: Number,
     },
@@ -43,14 +51,6 @@ function validateTweet(tweet) {
     return Joi.validate(tweet, schema);
 }
 
-function validateTweetEditing(tweet) {
-    const schema = {
-        newTweetText: Joi.string().min(1).max(322).required(),
-    };
-    return Joi.validate(tweet, schema);
-}
-
 exports.Tweet = Tweet;
 exports.tweetSchema = tweetSchema;
 exports.validateTweet = validateTweet;
-exports.validateTweetEditing = validateTweetEditing;

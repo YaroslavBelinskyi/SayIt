@@ -70,7 +70,7 @@ router.post('/new', async (req, res) => {
     });
 });
 
-router.post('/uploadmyphoto', auth, upload.single('avatar'), async (req, res) => {
+router.post('/uploadavatar', auth, upload.single('avatar'), async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
 
