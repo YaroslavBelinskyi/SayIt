@@ -28,18 +28,25 @@ router.get('/feed', auth, async (req, res) => {
             path: 'followings',
             select: 'tweets',
             populate: {
-                path: 'tweets',
-                select: 'tweetText creationDate',
+                path: 'tweets retweets',
+                select: 'tweetText creationDate tweet retweetText',
                 populate: {
-                    path: 'user',
-                    select: 'firstName lastName',
+                    path: 'user tweet',
+                    select: 'firstName lastName tweetText creationDate',
+                    populate: {
+                        path: 'user',
+                        select: 'firstName lastName',
+                    },
                 },
             },
         });
     const feed = [];
     allTweets.followings.forEach((e) => {
-        e.tweets.forEach((e1) => {
-            feed.push(e1);
+        e.tweets.forEach((t) => {
+            feed.push(t);
+        });
+        e.retweets.forEach((rt) => {
+            feed.push(rt);
         });
     });
     const sortedFeed = feed.sort((a, b) => b.creationDate - a.creationDate);
