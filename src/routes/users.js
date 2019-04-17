@@ -48,8 +48,6 @@ router.post('/new', async (req, res) => {
     user = await User.findOne({ userName: req.body.userName });
     if (user) return res.status(400).send('User name is already taken.');
 
-    // let dateOfBirth;
-    // if (req.body.DOB) dateOfBirth = new Date(req.body.DOB);
     user = new User({
         userName: req.body.userName,
         email: req.body.email,
@@ -100,22 +98,22 @@ router.patch('/updateme', auth, async (req, res) => {
     const checkUserName = await User.findOne({ userName: req.body.userName });
     if (checkUserName) return res.status(400).send('Username is already taken.');
 
-    const updatedUser = await User.findByIdAndUpdate(req.userId, {
-        userName: req.body.userName,
-        email: req.body.email,
-        password: req.body.password,
-        DOB: req.body.DOB,
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-    }, { new: true });
-
-    if (updatedUser.password) {
-        const salt = await bcrypt.genSalt(8);
-        updatedUser.password = await bcrypt.hash(updatedUser.password, salt);
-    }
-    await updatedUser.save();
-
-    res.send(updatedUser);
+    await User.findById(req.userId).exec(async (err, u) => {
+        if (err) throw err;
+        if (req.body.userName) u.userName = req.body.userName;
+        if (req.body.email) u.email = req.body.email;
+        if (req.body.password) u.password = req.body.password;
+        if (req.body.DOB) u.DOB = req.body.DOB;
+        if (req.body.firstName) u.firstName = req.body.firstName;
+        if (req.body.lastName) u.lastName = req.body.lastName;
+        await u.save();
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(8);
+            u.password = await bcrypt.hash(u.password, salt);
+            await u.save();
+        }
+        res.send(u);
+    });
 });
 
 // Follow one certain user.

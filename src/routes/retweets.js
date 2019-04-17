@@ -120,13 +120,13 @@ router.patch('/update/:retweetid', auth, async (req, res) => {
     if (error) return res.status(400).send(error.details[0].message);
 
     const isValidRetweeetId = validateId(req.params.retweetid);
-    if (!isValidRetweeetId) return res.status(400).send('Invalid tweet ID.');
+    if (!isValidRetweeetId) return res.status(400).send('Invalid retweet ID.');
 
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
     let retweet = await Retweet.findById(req.params.retweetid);
-    if (!retweet) return res.status(400).send('Comment was not found');
+    if (!retweet) return res.status(400).send('Retweet was not found');
 
     if (JSON.stringify(retweet.user) === JSON.stringify(req.userId)) {
         retweet = await Retweet.findByIdAndUpdate(req.params.retweetid,
@@ -176,11 +176,6 @@ router.delete('/delete/:retweetid', auth, async (req, res) => {
     const user = await User.findById(retweet.user);
 
     if (JSON.stringify(retweet.user) === JSON.stringify(req.userId)) {
-        retweet = await Retweet.findByIdAndDelete(req.params.retweetid);
-        deleteRetweetFromTweet(tweet, req.params.retweetid);
-        deleteRetweetFromUser(user, req.params.retweetid);
-        res.send(retweet);
-    } else if (JSON.stringify(tweet.user) === JSON.stringify(req.userId)) {
         retweet = await Retweet.findByIdAndDelete(req.params.retweetid);
         deleteRetweetFromTweet(tweet, req.params.retweetid);
         deleteRetweetFromUser(user, req.params.retweetid);
