@@ -71,6 +71,7 @@ router.post('/new', async (req, res) => {
 router.post('/uploadavatar', auth, upload.single('avatar'), async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
+    if (!req.file) return res.status(400).send('No image provided.');
 
     if (user.profilePhotoId) {
         cloudinary.v2.api.delete_resources(user.profilePhotoId, (error) => {
@@ -164,6 +165,43 @@ router.post('/follow/:userid', auth, async (req, res) => {
         unfollowUser(currentUser, user);
         deleteUserFromFollowers(user, currentUser);
         res.send(user);
+    }
+});
+
+// Remove follower from your followers.
+router.post('/removefollower/:userid', auth, async (req, res) => {
+    const isValidId = validateId(req.params.userid);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
+
+    const user = await User.findById(req.params.userid);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    const isValidCurrentId = validateId(req.userId);
+    if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
+
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) return res.status(400).send('Invalid current user.');
+
+    const isFollower = await User.findOne({
+        _id: req.userId,
+        followers: req.params.userid,
+    });
+    if (isFollower) {
+        async function removeUser(u, userToRemove) {
+            u.followers.remove(userToRemove);
+            u.numberOfFollowers -= 1;
+            await u.save();
+        }
+        async function removeUserfromFollowings(u, followingUser) {
+            u.followings.remove(followingUser);
+            u.numberOfFollowings -= 1;
+            await u.save();
+        }
+        await removeUser(currentUser, user);
+        await removeUserfromFollowings(user, currentUser);
+        res.send(currentUser);
+    } else {
+        res.send('This user does not follow you.');
     }
 });
 
