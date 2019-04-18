@@ -15,7 +15,7 @@ const router = express.Router();
 // Get the list of all users.
 router.get('/all', async (req, res) => {
     const users = await User.find()
-        .select('firstName lastName _id numberOfFollowers numberOfFollowings tweets')
+        .select('firstName lastName userName profilePhoto _id numberOfFollowers numberOfFollowings numberOfTweets numberOfRetweets')
         .sort('-numberOfFollowers');
     res.send(users);
 });
@@ -29,10 +29,10 @@ router.get('/:userid', async (req, res) => {
     if (!user) return res.status(400).send('Invalid user.');
 
     user = await User.findById(req.params.userid)
-        .select('-password -__v -followings -followers -favorites -email')
+        .select('-password -__v -followings -followers -favorites -email -profilePhotoId -retweets')
         .populate({
             path: 'tweets',
-            select: '-tweetLikes -tweetComments -__v',
+            select: '-tweetLikes -tweetComments -__v -retweets',
         });
     res.send(user);
 });
@@ -61,14 +61,10 @@ router.post('/new', async (req, res) => {
     await user.save();
 
     const token = user.generateAuthToken();
-    res.header('x-auth-token', token).send({
-        _id: user._id,
-        userName: user.userName,
-        email: user.email,
-    });
+    res.header('x-auth-token', token).send(user);
 });
 
-router.post('/uploadavatar', auth, upload.single('avatar'), async (req, res) => {
+router.put('/uploadavatar', auth, upload.single('avatar'), async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
     if (!req.file) return res.status(400).send('No image provided.');
@@ -82,7 +78,10 @@ router.post('/uploadavatar', auth, upload.single('avatar'), async (req, res) => 
     user.profilePhotoId = req.file.public_id;
     await user.save();
 
-    res.send(user);
+    res.send({
+        _id: user._id,
+        profilePhoto: user.profilePhoto,
+    });
 });
 
 // Update ALL information of the current logged user.
@@ -103,17 +102,22 @@ router.patch('/updateme', auth, async (req, res) => {
         if (err) throw err;
         if (req.body.userName) u.userName = req.body.userName;
         if (req.body.email) u.email = req.body.email;
-        if (req.body.password) u.password = req.body.password;
         if (req.body.DOB) u.DOB = req.body.DOB;
         if (req.body.firstName) u.firstName = req.body.firstName;
         if (req.body.lastName) u.lastName = req.body.lastName;
-        await u.save();
         if (req.body.password) {
             const salt = await bcrypt.genSalt(8);
-            u.password = await bcrypt.hash(u.password, salt);
-            await u.save();
+            u.password = await bcrypt.hash(req.body.password, salt);
         }
-        res.send(u);
+        await u.save();
+        res.send({
+            _id: user._id,
+            userName: u.userName,
+            email: u.email,
+            DOB: u.DOB,
+            firstName: u.firstName,
+            lastName: u.lastName,
+        });
     });
 });
 
@@ -150,7 +154,20 @@ router.post('/follow/:userid', auth, async (req, res) => {
         }
         addUserToFollowings(currentUser, user);
         addUserToFollowers(user, currentUser);
-        res.send(user);
+        res.send([{
+            _id: currentUser._id,
+            userName: currentUser.userName,
+            numberOfFollowings: currentUser.numberOfFollowings,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+        }, {
+            _id: user._id,
+            userName: user.userName,
+            numberOfFollowers: user.numberOfFollowers,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        }]);
+        // res.send(user);
     } else {
         async function unfollowUser(u, userToUnfollow) {
             u.followings.remove(userToUnfollow);
@@ -164,7 +181,19 @@ router.post('/follow/:userid', auth, async (req, res) => {
         }
         unfollowUser(currentUser, user);
         deleteUserFromFollowers(user, currentUser);
-        res.send(user);
+        res.send([{
+            _id: currentUser._id,
+            userName: currentUser.userName,
+            numberOfFollowings: currentUser.numberOfFollowings,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+        }, {
+            _id: user._id,
+            userName: user.userName,
+            numberOfFollowers: user.numberOfFollowers,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        }]);
     }
 });
 
@@ -199,7 +228,19 @@ router.post('/removefollower/:userid', auth, async (req, res) => {
         }
         await removeUser(currentUser, user);
         await removeUserfromFollowings(user, currentUser);
-        res.send(currentUser);
+        res.send([{
+            _id: currentUser._id,
+            userName: currentUser.userName,
+            numberOfFollowings: currentUser.numberOfFollowings,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+        }, {
+            _id: user._id,
+            userName: user.userName,
+            numberOfFollowers: user.numberOfFollowers,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        }]);
     } else {
         res.send('This user does not follow you.');
     }
@@ -214,7 +255,7 @@ router.get('/followers/:userid', async (req, res) => {
         .select('followers, numberOfFollowers')
         .populate({
             path: 'followers',
-            select: 'firstName lastName',
+            select: 'firstName lastName profilePhoto userName numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
         });
     if (!user) return res.status(400).send('Invalid user.');
     res.send(user);
@@ -229,7 +270,7 @@ router.get('/followings/:userid', async (req, res) => {
         .select('followings, numberOfFollowings')
         .populate({
             path: 'followings',
-            select: 'firstName lastName',
+            select: 'firstName lastName profilePhoto userName numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
         });
     if (!user) return res.status(400).send('Invalid user.');
     res.send(user);
