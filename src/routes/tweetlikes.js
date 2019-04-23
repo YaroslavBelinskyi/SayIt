@@ -47,7 +47,7 @@ router.post('/like/:tweetid', auth, async (req, res) => {
             path: 'tweetLikes',
             populate: {
                 path: 'user',
-                select: 'firstName lastName',
+                select: 'firstName lastName userName',
             },
         });
         res.send(modifiedTweet);
@@ -68,7 +68,15 @@ router.post('/like/:tweetid', auth, async (req, res) => {
         }
         await deleteLikeFromTweet(like, tweetObj);
         await deleteLikeFromUser(like, user);
-        res.send('Like was removed.');
+
+        const modifiedTweet = await Tweet.findById(req.params.tweetid).populate({
+            path: 'tweetLikes',
+            populate: {
+                path: 'user',
+                select: 'firstName lastName userName',
+            },
+        });
+        res.send(modifiedTweet);
     }
 });
 

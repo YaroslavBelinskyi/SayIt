@@ -13,11 +13,17 @@ router.get('/all/:userid', async (req, res) => {
     const user = await User.findById(req.params.userid);
     if (!user) return res.status(400).send('Invalid user.');
 
-    const tweets = await Tweet.find({ user: req.params.userid }).sort('-creationDate');
+    const tweets = await Tweet.find({ user: req.params.userid })
+        .select('-__v -retweets -tweetLikes -tweetComments')
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName',
+        })
+        .sort('-creationDate');
     res.send(tweets);
 });
 
-// Get the feed with all tweets of folowing users for the current logged user.
+// Get the feed with all tweets and retweets of folowing users for the current logged user.
 router.get('/feed', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
@@ -26,16 +32,16 @@ router.get('/feed', auth, async (req, res) => {
         .select('followings -_id')
         .populate({
             path: 'followings',
-            select: 'tweets',
+            select: 'tweets retweets',
             populate: {
                 path: 'tweets retweets',
-                select: 'tweetText creationDate tweet retweetText',
+                select: 'tweetText creationDate tweet retweetText numberOfLikes numberOfComments numberOfRetweets',
                 populate: {
                     path: 'user tweet',
-                    select: 'firstName lastName tweetText creationDate',
+                    select: 'firstName lastName tweetText creationDate userName numberOfLikes numberOfComments numberOfRetweets',
                     populate: {
                         path: 'user',
-                        select: 'firstName lastName',
+                        select: 'firstName lastName userName',
                     },
                 },
             },
@@ -64,9 +70,14 @@ router.get('/favorites', auth, async (req, res) => {
     const favorites = await User.findById(req.userId).select('favorites')
         .populate({
             path: 'favorites',
+            select: 'tweet',
             populate: {
                 path: 'tweet',
-                select: '-tweetLikes -tweetComments',
+                select: '-tweetLikes -tweetComments -retweets -__v',
+                populate: {
+                    path: 'user',
+                    select: 'firstName lastName userName',
+                },
             },
         });
     res.send(favorites);
@@ -95,9 +106,16 @@ router.post('/create', auth, async (req, res) => {
         u.numberOfTweets += 1;
         await u.save();
     }
-    addTweetToUser(user, tweet);
+    await addTweetToUser(user, tweet);
     await tweet.save();
-    res.send(tweet);
+
+    const modifyedTweet = await Tweet.findById(tweet._id)
+        .select('-tweetLikes -tweetComments -retweets')
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName',
+        });
+    res.send(modifyedTweet);
 });
 
 // Delete certain tweet created by the current logged user.
@@ -134,7 +152,20 @@ router.get('/:tweetid', async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
 
-    const tweet = await Tweet.findById(req.params.tweetid).populate('user');
+    const tweet = await Tweet.findById(req.params.tweetid)
+        .select('-retweets -tweetLikes -__v')
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName',
+        })
+        .populate({
+            path: 'tweetComments',
+            select: 'commentText creationgDate user',
+            populate: {
+                path: 'user',
+                select: 'firstName lastName userName',
+            },
+        });
     if (!tweet) return res.status(400).send('Tweet was not found.');
     res.send(tweet);
 });
@@ -153,10 +184,16 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const updatedTweet = await Tweet.findByIdAndUpdate(req.params.tweetid,
-        { tweetText: req.body.newTweetText }, { new: true });
+    let updatedTweet = await Tweet.findByIdAndUpdate(req.params.tweetid,
+        { tweetText: req.body.tweetText }, { new: true });
     if (!updatedTweet) return res.status(400).send('Tweet was not found.');
 
+    updatedTweet = await Tweet.findById(req.params.tweetid)
+        .select('-tweetLikes -tweetComments -retweets')
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName',
+        });
     res.send(updatedTweet);
 });
 
