@@ -14,14 +14,14 @@ router.get('/:retweetid', async (req, res) => {
     const retweetWithTweet = await Retweet.findById(req.params.retweetid)
         .populate({
             path: 'user',
-            select: 'firstName lastName creationDate',
+            select: 'firstName lastName userName profilePhoto',
         })
         .populate({
             path: 'tweet',
             select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
             populate: {
                 path: 'user',
-                select: 'firstName lastName',
+                select: 'firstName lastName userName profilePhoto',
             },
         });
     if (!retweetWithTweet) return res.status(400).send('Retweet was not found.');
@@ -34,7 +34,8 @@ router.get('/all/:userid', async (req, res) => {
     const isValidUserId = validateId(req.params.userid);
     if (!isValidUserId) return res.status(400).send('Invalid user ID.');
 
-    const retweets = await User.findById(req.params.userid).select('retweets firstName lastName')
+    const retweets = await User.findById(req.params.userid)
+        .select('retweets firstName lastName userName profilePhoto')
         .populate({
             path: 'retweets',
             select: '-user',
@@ -43,7 +44,7 @@ router.get('/all/:userid', async (req, res) => {
                 select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
                 populate: {
                     path: 'user',
-                    select: 'firstName lastName',
+                    select: 'firstName lastName userName profilePhoto',
                 },
             },
         });
@@ -98,14 +99,14 @@ router.post('/share/:tweetid', auth, async (req, res) => {
         const retweetWithTweet = await Retweet.findById(retweet._id)
             .populate({
                 path: 'user',
-                select: 'firstName lastName creationDate',
+                select: 'firstName lastName userName profilePhoto',
             })
             .populate({
                 path: 'tweet',
                 select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
                 populate: {
                     path: 'user',
-                    select: 'firstName lastName',
+                    select: 'firstName lastName userName profilePhoto',
                 },
             });
         res.send(retweetWithTweet);
@@ -135,14 +136,14 @@ router.patch('/update/:retweetid', auth, async (req, res) => {
         const editedRetweet = await Retweet.findById(retweet._id)
             .populate({
                 path: 'user',
-                select: 'firstName lastName creationDate',
+                select: 'firstName lastName userName profilePhoto',
             })
             .populate({
                 path: 'tweet',
                 select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
                 populate: {
                     path: 'user',
-                    select: 'firstName lastName',
+                    select: 'firstName lastName userName profilePhoto',
                 },
             });
         res.send(editedRetweet);

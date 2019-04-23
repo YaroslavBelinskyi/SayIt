@@ -17,7 +17,7 @@ router.get('/all/:userid', async (req, res) => {
         .select('-__v -retweets -tweetLikes -tweetComments')
         .populate({
             path: 'user',
-            select: 'firstName lastName userName',
+            select: 'firstName lastName userName profilePhoto',
         })
         .sort('-creationDate');
     res.send(tweets);
@@ -38,10 +38,10 @@ router.get('/feed', auth, async (req, res) => {
                 select: 'tweetText creationDate tweet retweetText numberOfLikes numberOfComments numberOfRetweets',
                 populate: {
                     path: 'user tweet',
-                    select: 'firstName lastName tweetText creationDate userName numberOfLikes numberOfComments numberOfRetweets',
+                    select: 'firstName lastName profilePhoto tweetText creationDate userName numberOfLikes numberOfComments numberOfRetweets',
                     populate: {
                         path: 'user',
-                        select: 'firstName lastName userName',
+                        select: 'firstName lastName userName profilePhoto',
                     },
                 },
             },
@@ -76,7 +76,7 @@ router.get('/favorites', auth, async (req, res) => {
                 select: '-tweetLikes -tweetComments -retweets -__v',
                 populate: {
                     path: 'user',
-                    select: 'firstName lastName userName',
+                    select: 'firstName lastName userName profilePhoto',
                 },
             },
         });
@@ -113,7 +113,7 @@ router.post('/create', auth, async (req, res) => {
         .select('-tweetLikes -tweetComments -retweets')
         .populate({
             path: 'user',
-            select: 'firstName lastName userName',
+            select: 'firstName lastName userName profilePhoto',
         });
     res.send(modifyedTweet);
 });
@@ -156,14 +156,14 @@ router.get('/:tweetid', async (req, res) => {
         .select('-retweets -tweetLikes -__v')
         .populate({
             path: 'user',
-            select: 'firstName lastName userName',
+            select: 'firstName lastName userName profilePhoto',
         })
         .populate({
             path: 'tweetComments',
             select: 'commentText creationgDate user',
             populate: {
                 path: 'user',
-                select: 'firstName lastName userName',
+                select: 'firstName lastName userName profilePhoto',
             },
         });
     if (!tweet) return res.status(400).send('Tweet was not found.');
@@ -192,7 +192,7 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
         .select('-tweetLikes -tweetComments -retweets')
         .populate({
             path: 'user',
-            select: 'firstName lastName userName',
+            select: 'firstName lastName userName profilePhoto',
         });
     res.send(updatedTweet);
 });

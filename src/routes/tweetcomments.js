@@ -14,12 +14,11 @@ router.get('/all/:tweetid', auth, async (req, res) => {
     const isValidId = validateId(req.userId);
     if (!isValidId) return res.status(400).send('Invalid user ID.');
 
-    const comments = await TweetComment.find({
-        tweet: req.params.tweetid,
-    }).populate({
-        path: 'user',
-        select: 'firstName lastName',
-    });
+    const comments = await TweetComment.find({ tweet: req.params.tweetid })
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName profilePhoto',
+        });
     res.send(comments);
 });
 
@@ -57,7 +56,7 @@ router.post('/create/:tweetid', auth, async (req, res) => {
     const tweetWithComment = await TweetComment.findById(tweetComment._id)
         .populate({
             path: 'user',
-            select: 'firstName lastName',
+            select: 'firstName lastName userName profilePhoto',
         })
         .populate({
             path: 'tweet',

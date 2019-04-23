@@ -43,13 +43,16 @@ router.post('/like/:tweetid', auth, async (req, res) => {
         await addLiketoUser(tweetLike, user);
         await tweetLike.save();
 
-        const modifiedTweet = await Tweet.findById(req.params.tweetid).populate({
-            path: 'tweetLikes',
-            populate: {
-                path: 'user',
-                select: 'firstName lastName userName',
-            },
-        });
+        const modifiedTweet = await Tweet.findById(req.params.tweetid)
+            .select('_id numberOfLikes tweetLikes user')
+            .populate({
+                path: 'tweetLikes',
+                select: '-tweet',
+                populate: {
+                    path: 'user',
+                    select: 'firstName lastName userName profilePhoto',
+                },
+            });
         res.send(modifiedTweet);
     } else {
         const tweetObj = await Tweet.findById(req.params.tweetid);
@@ -69,13 +72,16 @@ router.post('/like/:tweetid', auth, async (req, res) => {
         await deleteLikeFromTweet(like, tweetObj);
         await deleteLikeFromUser(like, user);
 
-        const modifiedTweet = await Tweet.findById(req.params.tweetid).populate({
-            path: 'tweetLikes',
-            populate: {
-                path: 'user',
-                select: 'firstName lastName userName',
-            },
-        });
+        const modifiedTweet = await Tweet.findById(req.params.tweetid)
+            .select('_id numberOfLikes tweetLikes user')
+            .populate({
+                path: 'tweetLikes',
+                select: '-tweet',
+                populate: {
+                    path: 'user',
+                    select: 'firstName lastName userName profilePhoto',
+                },
+            });
         res.send(modifiedTweet);
     }
 });
