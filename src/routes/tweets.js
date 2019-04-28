@@ -133,6 +133,45 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
     if (!tweet) return res.status(400).send('Tweet was not found.');
     if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
 
+    const user = await User.findById(tweet.user);
+    if (!user) return res.status(400).send('Invalid user.');
+
+    async function removeTweetFromUser(u) {
+        await u.tweets.remove(req.params.tweetid);
+        u.numberOfTweets -= 1;
+        await u.save();
+    }
+    async function removeTweetFromFavorites(tweetid) {
+        await TweetLike.find({ tweet: tweetid }, async (err, likesArray) => {
+            if (err) throw err;
+            async function deleteLikeFromUser(l, u) {
+                await u.favorites.remove(l);
+                await u.save();
+            }
+            likesArray.forEach(async (like) => {
+                const userObj = await User.findOne(like.user);
+                await deleteLikeFromUser(like, userObj);
+            });
+        });
+    }
+    async function removeTweetFromRetweets(tweetid) {
+        await Retweet.find({ tweet: tweetid }, async (err, retweetsArray) => {
+            if (err) throw err;
+            async function deleteRetweetFromUser(rt, u) {
+                await u.retweets.remove(rt);
+                u.numberOfRetweets -= 1;
+                await u.save();
+            }
+            retweetsArray.forEach(async (retweet) => {
+                const userObj = await User.findOne(retweet.user);
+                await deleteRetweetFromUser(retweet, userObj);
+            });
+        });
+    }
+    await removeTweetFromRetweets(req.params.tweetid);
+    await removeTweetFromFavorites(req.params.tweetid);
+    await removeTweetFromUser(user);
+
     await Tweet.findById(req.params.tweetid, async (err, tw) => {
         await TweetComment.deleteMany({
             _id: {
@@ -154,44 +193,6 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
 
     tweet = await Tweet.findByIdAndDelete(req.params.tweetid);
 
-    const user = await User.findById(tweet.user);
-    if (!user) return res.status(400).send('Invalid user.');
-
-    async function removeTweetFromUser(u) {
-        await u.tweets.remove(req.params.tweetid);
-        u.numberOfTweets -= 1;
-        await u.save();
-    }
-
-    async function removeTweetFromFavorites(tweetid) {
-        await TweetLike.find({ tweet: tweetid }, async (err, likesArray) => {
-            if (err) throw err;
-            async function deleteLikeFromUser(l, u) {
-                await u.favorites.remove(l);
-                await u.save();
-            }
-            likesArray.forEach(async (like) => {
-                const userObj = await User.findOne(like.user);
-                await deleteLikeFromUser(like, userObj);
-            });
-        });
-    }
-    async function removeTweetFromRetweets(tweetid) {
-        await Retweet.find({ tweet: tweetid }, async (err, retweetsArray) => {
-            if (err) throw err;
-            async function deleteLikeFromUser(rt, u) {
-                await u.retweets.remove(rt);
-                await u.save();
-            }
-            retweetsArray.forEach(async (retweet) => {
-                const userObj = await User.findOne(retweet.user);
-                await deleteLikeFromUser(retweet, userObj);
-            });
-        });
-    }
-    await removeTweetFromRetweets(req.params.tweetid);
-    await removeTweetFromFavorites(req.params.tweetid);
-    await removeTweetFromUser(user);
     res.send(tweet);
 });
 
