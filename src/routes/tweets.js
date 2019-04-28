@@ -191,7 +191,8 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
         if (err) throw err;
     });
 
-    tweet = await Tweet.findByIdAndDelete(req.params.tweetid);
+    tweet = await Tweet.findByIdAndDelete(req.params.tweetid)
+        .select('_id user tweetText creationDate');
 
     res.send(tweet);
 });
