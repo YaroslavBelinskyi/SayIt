@@ -95,7 +95,7 @@ function validateUser(user) {
         userName: Joi.string().min(3).max(50).required(),
         email: Joi.string().min(5).max(255).email().required(),
         password: Joi.string().min(6).max(255).required(),
-        DOB: Joi.date(),
+        DOB: Joi.date().min('1920.01.01').max('2007.12.31'),
         firstName: Joi.string().min(3).max(50).required(),
         lastName: Joi.string().min(3).max(50).required(),
     };

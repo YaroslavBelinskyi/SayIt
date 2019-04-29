@@ -16,7 +16,7 @@ const tweetCommentSchema = new mongoose.Schema({
         maxlength: 322,
         required: true,
     },
-    creationgDate: {
+    creationDate: {
         type: Date,
         default: Date.now,
     },

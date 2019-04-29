@@ -276,7 +276,7 @@ router.get('/followings/:userid', async (req, res) => {
     res.send(user);
 });
 
-// Delete current logged user.
+// Delete current logged user (!!Postponed).
 router.delete('/deleteme', auth, async (req, res) => {
     const isValidCurrentId = validateId(req.userId);
     if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
