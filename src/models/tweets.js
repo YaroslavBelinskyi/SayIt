@@ -40,6 +40,10 @@ const tweetSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    isPinned: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const Tweet = mongoose.model('Tweet', tweetSchema);

@@ -4,9 +4,9 @@ const cloudinary = require('cloudinary');
 const {
     User, validateUser, validateUserUpdate, validateId,
 } = require('../models/users');
-const { Tweet } = require('../models/tweets');
-const { TweetComment } = require('../models/tweetcomments');
-const { TweetLike } = require('../models/tweetlikes');
+// const { Tweet } = require('../models/tweets');
+// const { TweetComment } = require('../models/tweetcomments');
+// const { TweetLike } = require('../models/tweetlikes');
 const auth = require('../middleware/auth');
 const upload = require('../middleware/photoupload');
 
@@ -15,7 +15,11 @@ const router = express.Router();
 // Get the list of all users.
 router.get('/all', async (req, res) => {
     const users = await User.find()
-        .select('firstName lastName userName profilePhoto _id numberOfFollowers numberOfFollowings numberOfTweets numberOfRetweets')
+        .select('firstName lastName userName profilePhoto _id numberOfFollowers numberOfFollowings numberOfTweets numberOfRetweets pinnedTweet')
+        .populate({
+            path: 'pinnedTweet',
+            select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate isPinned',
+        })
         .sort('-numberOfFollowers');
     res.send(users);
 });
@@ -32,6 +36,10 @@ router.get('/:userid', async (req, res) => {
         .select('-password -__v -followings -followers -favorites -email -profilePhotoId -retweets')
         .populate({
             path: 'tweets',
+            select: '-tweetLikes -tweetComments -__v -retweets',
+        })
+        .populate({
+            path: 'pinnedTweet',
             select: '-tweetLikes -tweetComments -__v -retweets',
         });
     res.send(user);
@@ -70,7 +78,7 @@ router.put('/uploadavatar', auth, upload.single('avatar'), async (req, res) => {
     if (!req.file) return res.status(400).send('No image provided.');
 
     if (user.profilePhotoId) {
-        cloudinary.v2.api.delete_resources(user.profilePhotoId, (error) => {
+        await cloudinary.v2.api.delete_resources(user.profilePhotoId, (error) => {
             if (error) throw error;
         });
     }
@@ -167,7 +175,6 @@ router.post('/follow/:userid', auth, async (req, res) => {
             firstName: user.firstName,
             lastName: user.lastName,
         }]);
-        // res.send(user);
     } else {
         async function unfollowUser(u, userToUnfollow) {
             u.followings.remove(userToUnfollow);
@@ -277,6 +284,7 @@ router.get('/followings/:userid', async (req, res) => {
 });
 
 // Delete current logged user (!!Postponed).
+/*
 router.delete('/deleteme', auth, async (req, res) => {
     const isValidCurrentId = validateId(req.userId);
     if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
@@ -294,22 +302,23 @@ router.delete('/deleteme', auth, async (req, res) => {
         user: req.params.id,
     });
 
-    // const tweets = Tweet.find().populate({
-    //     path: 'tweetComments',
-    // });
-    // async function deleteAllCommentsFromTweets(tw, com) {
-    //     await tw.tweetComments.remove(com);
-    //     tw.numberOfComments -= 1;
-    //     await tw.save();
-    // }
-    // async function deleteAllLikesFromTweet(l, tw) {
-    //     tw.tweetLikes.remove(l);
-    //     await tw.save();
-    // }
-    // deleteAllCommentsFromTweets(tweet, req.body.commentId);
-    // deleteAllLikesFromTweet(like, tweetObj);
+    const tweets = Tweet.find().populate({
+        path: 'tweetComments',
+    });
+    async function deleteAllCommentsFromTweets(tw, com) {
+        await tw.tweetComments.remove(com);
+        tw.numberOfComments -= 1;
+        await tw.save();
+    }
+    async function deleteAllLikesFromTweet(l, tw) {
+        tw.tweetLikes.remove(l);
+        await tw.save();
+    }
+    deleteAllCommentsFromTweets(tweet, req.body.commentId);
+    deleteAllLikesFromTweet(like, tweetObj);
 
     res.send(user);
 });
+*/
 
 module.exports = router;

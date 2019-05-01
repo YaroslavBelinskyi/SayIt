@@ -133,7 +133,13 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
     if (!tweet) return res.status(400).send('Tweet was not found.');
     if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
 
-    const user = await User.findById(tweet.user);
+    const user = await User.findById(tweet.user, async (err, u) => {
+        if (err) throw err;
+        if (u.pinnedTweet && u.pinnedTweet.toString() === req.params.tweetid) {
+            u.pinnedTweet = null;
+            await u.save();
+        }
+    });
     if (!user) return res.status(400).send('Invalid user.');
 
     async function removeTweetFromUser(u) {
@@ -245,6 +251,41 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
             select: 'firstName lastName userName profilePhoto',
         });
     res.send(updatedTweet);
+});
+
+router.post('/pintweet/:tweetid', auth, async (req, res) => {
+    const isValidTweetId = validateId(req.params.tweetid);
+    if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
+
+    const isValidId = validateId(req.userId);
+    if (!isValidId) return res.status(400).send('Invalid user ID.');
+
+    const tweet = await Tweet.findById(req.params.tweetid, async (err, tw) => {
+        if (err) throw err;
+
+        const user = await User.findById(tw.user);
+
+        if (user.pinnedTweet && user.pinnedTweet.toString() !== req.params.tweetid) {
+            await Tweet.findByIdAndUpdate(user.pinnedTweet,
+                { isPinned: false }, { new: true });
+        }
+        if (tw.isPinned) {
+            tw.isPinned = false;
+            user.pinnedTweet = null;
+            await tw.save();
+            await user.save();
+        } else {
+            tw.isPinned = true;
+            user.pinnedTweet = tw._id;
+            await tw.save();
+            await user.save();
+        }
+        res.send({
+            _id: tw._id,
+            isPinned: tw.isPinned,
+        });
+    });
+    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
 });
 
 module.exports = router;

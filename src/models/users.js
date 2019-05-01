@@ -81,6 +81,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
+    pinnedTweet: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tweet',
+    },
 });
 
 userSchema.methods.generateAuthToken = function () {
