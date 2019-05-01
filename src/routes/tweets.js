@@ -22,6 +22,7 @@ router.get('/all/:userid', async (req, res) => {
             path: 'user',
             select: 'firstName lastName userName profilePhoto',
         })
+        .sort('-isPinned')
         .sort('-creationDate');
     res.send(tweets);
 });
