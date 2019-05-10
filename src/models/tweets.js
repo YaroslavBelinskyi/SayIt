@@ -44,6 +44,12 @@ const tweetSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    images: {
+        type: Array,
+    },
+    imagesIds: {
+        type: Array,
+    },
 });
 
 const Tweet = mongoose.model('Tweet', tweetSchema);

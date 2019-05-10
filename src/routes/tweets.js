@@ -1,10 +1,12 @@
 const express = require('express');
+const cloudinary = require('cloudinary');
 const { Tweet, validateTweet } = require('../models/tweets');
 const { User, validateId } = require('../models/users');
 const { TweetComment } = require('../models/tweetcomments');
 const { TweetLike } = require('../models/tweetlikes');
 const { Retweet } = require('../models/retweets');
 const auth = require('../middleware/auth');
+const { uploadTweetImages } = require('../middleware/photouploader');
 
 const router = express.Router();
 
@@ -120,6 +122,49 @@ router.post('/create', auth, async (req, res) => {
             select: 'firstName lastName userName profilePhoto',
         });
     res.send(modifyedTweet);
+});
+
+// Add images to tweet.
+router.put('/uploadimages/:tweetid', auth, uploadTweetImages.array('tweetimages'), async (req, res) => {
+    const tweet = await Tweet.findById(req.params.tweetid);
+    if (!tweet) return res.status(400).send('Invalid tweet.');
+    if (!req.files) return res.status(400).send('No images provided.');
+    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+
+    req.files.forEach((img) => {
+        tweet.images.push(img.url);
+        tweet.imagesIds.push(img.public_id);
+    });
+    await tweet.save();
+
+    res.send({
+        _id: tweet._id,
+        images: tweet.images,
+    });
+});
+
+// Remove images from tweet.
+router.delete('/deleteimages/:tweetid', auth, async (req, res) => {
+    const tweet = await Tweet.findById(req.params.tweetid);
+    if (!tweet) return res.status(400).send('Invalid tweet.');
+    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const id of req.body.imagesIds) {
+        cloudinary.v2.api.delete_resources(id, (error) => {
+            if (error) throw error;
+        });
+    }
+
+    req.body.imagesIds.forEach((img) => {
+        tweet.imagesIds.remove(img);
+    });
+    req.body.images.forEach((img) => {
+        tweet.images.remove(img);
+    });
+
+    await tweet.save();
+    res.send(tweet);
 });
 
 // Delete certain tweet created by the current logged user.
@@ -254,6 +299,7 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
     res.send(updatedTweet);
 });
 
+// Pin or unpin tweet at the top of all tweets list or in a user profile.
 router.post('/pintweet/:tweetid', auth, async (req, res) => {
     const isValidTweetId = validateId(req.params.tweetid);
     if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');

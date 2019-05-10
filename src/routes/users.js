@@ -8,7 +8,7 @@ const {
 // const { TweetComment } = require('../models/tweetcomments');
 // const { TweetLike } = require('../models/tweetlikes');
 const auth = require('../middleware/auth');
-const upload = require('../middleware/photoupload');
+const { uploadAvatar } = require('../middleware/photouploader');
 
 const router = express.Router();
 
@@ -72,7 +72,8 @@ router.post('/new', async (req, res) => {
     res.header('x-auth-token', token).send(user);
 });
 
-router.put('/uploadavatar', auth, upload.single('avatar'), async (req, res) => {
+// Upload user's avatar or replace the old one.
+router.put('/uploadavatar', auth, uploadAvatar.single('avatar'), async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
     if (!req.file) return res.status(400).send('No image provided.');
