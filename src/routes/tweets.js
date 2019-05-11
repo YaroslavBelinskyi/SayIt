@@ -107,6 +107,12 @@ router.post('/create', auth, async (req, res) => {
         tweetText: req.body.tweetText,
     });
 
+    if (req.body.tags) {
+        const tags = req.body.tags.split(' ');
+        tags.forEach((tag) => {
+            tweet.tags.push(tag);
+        });
+    }
     async function addTweetToUser(u, tw) {
         u.tweets.push(tw._id);
         u.numberOfTweets += 1;

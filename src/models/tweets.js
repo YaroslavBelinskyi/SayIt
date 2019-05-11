@@ -50,6 +50,9 @@ const tweetSchema = new mongoose.Schema({
     imagesIds: {
         type: Array,
     },
+    tags: {
+        type: Array,
+    },
 });
 
 const Tweet = mongoose.model('Tweet', tweetSchema);
@@ -57,6 +60,7 @@ const Tweet = mongoose.model('Tweet', tweetSchema);
 function validateTweet(tweet) {
     const schema = {
         tweetText: Joi.string().min(1).max(322).required(),
+        tags: Joi.string(),
     };
     return Joi.validate(tweet, schema);
 }
