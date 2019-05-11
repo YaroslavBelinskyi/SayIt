@@ -10,6 +10,8 @@
 };
 */
 const winston = require('winston');
+const config = require('config');
+
 require('winston-mongodb');
 
 module.exports = winston.createLogger({
@@ -20,8 +22,8 @@ module.exports = winston.createLogger({
     ],
     exceptionHandlers: [
         new winston.transports.File({ filename: 'exceptions.log' }),
-        new winston.transports.MongoDB({ db: 'mongodb://localhost/SayIt' }),
+        new winston.transports.MongoDB({ db: config.get('db') }),
     ],
 });
 // added for logging errors into BD.
-winston.add(new winston.transports.MongoDB({ db: 'mongodb://localhost/SayIt' }));
+winston.add(new winston.transports.MongoDB({ db: config.get('db') }));
