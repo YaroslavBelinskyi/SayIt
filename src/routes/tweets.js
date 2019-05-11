@@ -224,6 +224,13 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
     await removeTweetFromFavorites(req.params.tweetid);
     await removeTweetFromUser(user);
 
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const id of tweet.imagesIds) {
+        cloudinary.v2.api.delete_resources(id, (error) => {
+            if (error) throw error;
+        });
+    }
+
     await Tweet.findById(req.params.tweetid, async (err, tw) => {
         await TweetComment.deleteMany({
             _id: {
