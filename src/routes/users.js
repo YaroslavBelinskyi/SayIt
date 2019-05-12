@@ -4,9 +4,6 @@ const cloudinary = require('cloudinary');
 const {
     User, validateUser, validateUserUpdate, validateId,
 } = require('../models/users');
-// const { Tweet } = require('../models/tweets');
-// const { TweetComment } = require('../models/tweetcomments');
-// const { TweetLike } = require('../models/tweetlikes');
 const auth = require('../middleware/auth');
 const { uploadAvatar } = require('../middleware/photouploader');
 
@@ -18,7 +15,7 @@ router.get('/all', async (req, res) => {
         .select('firstName lastName userName profilePhoto _id numberOfFollowers numberOfFollowings numberOfTweets numberOfRetweets pinnedTweet')
         .populate({
             path: 'pinnedTweet',
-            select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate isPinned',
+            select: 'tweetText images tags numberOfLikes numberOfComments numberOfRetweets creationDate isPinned',
         })
         .sort('-numberOfFollowers');
     res.send(users);
@@ -26,22 +23,28 @@ router.get('/all', async (req, res) => {
 
 // Get one user.
 router.get('/:userid', async (req, res) => {
-    const isValidId = validateId(req.params.userid);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
 
-    let user = await User.findById(req.params.userid);
-    if (!user) return res.status(400).send('Invalid user.');
-
-    user = await User.findById(req.params.userid)
+    const user = await User.findById(req.params.userid)
         .select('-password -__v -followings -followers -favorites -email -profilePhotoId -retweets')
         .populate({
             path: 'tweets',
-            select: '-tweetLikes -tweetComments -__v -retweets',
+            select: '-tweetLikes -tweetComments -__v -retweets -imagesIds',
+            populate: {
+                path: 'user',
+                select: 'userName firstName lastName profilePhoto',
+            },
         })
         .populate({
             path: 'pinnedTweet',
             select: '-tweetLikes -tweetComments -__v -retweets',
+            populate: {
+                path: 'user',
+                select: 'userName firstName lastName profilePhoto',
+            },
         });
+
+    if (!user) return res.status(400).send('Invalid user.');
     res.send(user);
 });
 
@@ -50,13 +53,10 @@ router.post('/new', async (req, res) => {
     const { error } = validateUser(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    let user = await User.findOne({ email: req.body.email });
-    if (user) return res.status(400).send('Email is already register.');
+    if (await User.findOne({ email: req.body.email })) return res.status(400).send('Email is already register.');
+    if (await User.findOne({ userName: req.body.userName })) return res.status(400).send('User name is already taken.');
 
-    user = await User.findOne({ userName: req.body.userName });
-    if (user) return res.status(400).send('User name is already taken.');
-
-    user = new User({
+    const user = new User({
         userName: req.body.userName,
         email: req.body.email,
         password: req.body.password,
@@ -93,19 +93,15 @@ router.put('/uploadavatar', auth, uploadAvatar.single('avatar'), async (req, res
     });
 });
 
-// Update ALL information of the current logged user.
+// Update information of the current logged user.
 router.patch('/updateme', auth, async (req, res) => {
-    const user = await User.findById(req.userId);
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!await User.findById(req.userId)) return res.status(400).send('Invalid user.');
 
     const { error } = validateUserUpdate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const checkEmail = await User.findOne({ email: req.body.email });
-    if (checkEmail) return res.status(400).send('Email is already taken.');
-
-    const checkUserName = await User.findOne({ userName: req.body.userName });
-    if (checkUserName) return res.status(400).send('Username is already taken.');
+    if (await User.findOne({ email: req.body.email })) return res.status(400).send('Email is already taken.');
+    if (await User.findOne({ userName: req.body.userName })) return res.status(400).send('Username is already taken.');
 
     await User.findById(req.userId).exec(async (err, u) => {
         if (err) throw err;
@@ -120,7 +116,7 @@ router.patch('/updateme', auth, async (req, res) => {
         }
         await u.save();
         res.send({
-            _id: user._id,
+            _id: u._id,
             userName: u.userName,
             email: u.email,
             DOB: u.DOB,
@@ -132,24 +128,21 @@ router.patch('/updateme', auth, async (req, res) => {
 
 // Follow one certain user.
 router.post('/follow/:userid', auth, async (req, res) => {
-    const isValidId = validateId(req.params.userid);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid current user ID.');
+    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
+    if (req.params.userid === req.userId) return res.status(400).send('You cannot follow yourself.');
 
     const user = await User.findById(req.params.userid);
     if (!user) return res.status(400).send('Invalid user.');
 
-    const isValidCurrentId = validateId(req.userId);
-    if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
-
     const currentUser = await User.findById(req.userId);
     if (!currentUser) return res.status(400).send('Invalid user.');
-
-    if (req.params.userid === req.userId) return res.status(400).send('You cannot follow yourself.');
 
     const isFollowed = await User.findOne({
         _id: req.userId,
         followings: req.params.userid,
     });
+
     if (!isFollowed) {
         async function addUserToFollowings(u, userToFollow) {
             u.followings.push(userToFollow);
@@ -207,14 +200,12 @@ router.post('/follow/:userid', auth, async (req, res) => {
 
 // Remove follower from your followers.
 router.post('/removefollower/:userid', auth, async (req, res) => {
-    const isValidId = validateId(req.params.userid);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid current user ID.');
+    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
+    if (req.params.userid === req.userId) return res.status(400).send('You cannot do this with yourself.');
 
     const user = await User.findById(req.params.userid);
     if (!user) return res.status(400).send('Invalid user.');
-
-    const isValidCurrentId = validateId(req.userId);
-    if (!isValidCurrentId) return res.status(400).send('Invalid current user ID.');
 
     const currentUser = await User.findById(req.userId);
     if (!currentUser) return res.status(400).send('Invalid current user.');
@@ -223,6 +214,7 @@ router.post('/removefollower/:userid', auth, async (req, res) => {
         _id: req.userId,
         followers: req.params.userid,
     });
+
     if (isFollower) {
         async function removeUser(u, userToRemove) {
             u.followers.remove(userToRemove);
@@ -256,14 +248,13 @@ router.post('/removefollower/:userid', auth, async (req, res) => {
 
 // Get the list of all followers of the certain user.
 router.get('/followers/:userid', async (req, res) => {
-    const isValidId = validateId(req.params.userid);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
 
     const user = await User.findById(req.params.userid)
         .select('followers, numberOfFollowers')
         .populate({
             path: 'followers',
-            select: 'firstName lastName profilePhoto userName numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
+            select: 'firstName lastName profilePhoto userName pinnedTweet numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
         });
     if (!user) return res.status(400).send('Invalid user.');
     res.send(user);
@@ -271,14 +262,13 @@ router.get('/followers/:userid', async (req, res) => {
 
 // Get the list of all followings of the certain user.
 router.get('/followings/:userid', async (req, res) => {
-    const isValidId = validateId(req.params.userid);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
 
     const user = await User.findById(req.params.userid)
         .select('followings, numberOfFollowings')
         .populate({
             path: 'followings',
-            select: 'firstName lastName profilePhoto userName numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
+            select: 'firstName lastName profilePhoto userName pinnedTweet numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
         });
     if (!user) return res.status(400).send('Invalid user.');
     res.send(user);

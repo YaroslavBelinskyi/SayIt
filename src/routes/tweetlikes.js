@@ -8,11 +8,8 @@ const router = express.Router();
 
 // Like\unlike certain tweet by the current logged user and add\remove it to\from his favorites.
 router.post('/like/:tweetid', auth, async (req, res) => {
-    const isValidTweetId = validateId(req.params.tweetid);
-    if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');

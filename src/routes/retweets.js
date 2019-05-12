@@ -8,8 +8,7 @@ const router = express.Router();
 
 // Get one retweet.
 router.get('/:retweetid', async (req, res) => {
-    const isValidTweetId = validateId(req.params.retweetid);
-    if (!isValidTweetId) return res.status(400).send('Invalid retweet ID.');
+    if (!validateId(req.params.retweetid)) return res.status(400).send('Invalid retweet ID.');
 
     const retweetWithTweet = await Retweet.findById(req.params.retweetid)
         .populate({
@@ -18,7 +17,7 @@ router.get('/:retweetid', async (req, res) => {
         })
         .populate({
             path: 'tweet',
-            select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
+            select: 'tweetText numberOfLikes tags images numberOfComments numberOfRetweets creationDate',
             populate: {
                 path: 'user',
                 select: 'firstName lastName userName profilePhoto',
@@ -31,8 +30,7 @@ router.get('/:retweetid', async (req, res) => {
 
 // Get all user's retweets.
 router.get('/all/:userid', async (req, res) => {
-    const isValidUserId = validateId(req.params.userid);
-    if (!isValidUserId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
 
     const retweets = await User.findById(req.params.userid)
         .select('retweets firstName lastName userName profilePhoto')
@@ -41,7 +39,7 @@ router.get('/all/:userid', async (req, res) => {
             select: '-user',
             populate: {
                 path: 'tweet',
-                select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
+                select: 'tweetText numberOfLikes tags images numberOfComments numberOfRetweets creationDate',
                 populate: {
                     path: 'user',
                     select: 'firstName lastName userName profilePhoto',
@@ -54,11 +52,8 @@ router.get('/all/:userid', async (req, res) => {
 
 // Make a retweet for the certain tweet from the current logged user.
 router.post('/share/:tweetid', auth, async (req, res) => {
-    const isValidTweetId = validateId(req.params.tweetid);
-    if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
     const user = await User.findById(req.userId);
     if (!user) return res.status(400).send('Invalid user.');
@@ -73,6 +68,7 @@ router.post('/share/:tweetid', auth, async (req, res) => {
         tweet: req.params.tweetid,
         user: req.userId,
     });
+
     if (!tweetHasRetweet) {
         const retweet = new Retweet({
             user: req.userId,
@@ -103,7 +99,7 @@ router.post('/share/:tweetid', auth, async (req, res) => {
             })
             .populate({
                 path: 'tweet',
-                select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
+                select: 'tweetText numberOfLikes tags images numberOfComments numberOfRetweets creationDate',
                 populate: {
                     path: 'user',
                     select: 'firstName lastName userName profilePhoto',
@@ -117,14 +113,11 @@ router.post('/share/:tweetid', auth, async (req, res) => {
 
 // Update the comment of the certain tweet if it was created by the current logged user.
 router.patch('/update/:retweetid', auth, async (req, res) => {
+    if (!validateId(req.params.retweetid)) return res.status(400).send('Invalid retweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+
     const { error } = validateRetweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
-
-    const isValidRetweeetId = validateId(req.params.retweetid);
-    if (!isValidRetweeetId) return res.status(400).send('Invalid retweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
 
     let retweet = await Retweet.findById(req.params.retweetid);
     if (!retweet) return res.status(400).send('Retweet was not found');
@@ -140,7 +133,7 @@ router.patch('/update/:retweetid', auth, async (req, res) => {
             })
             .populate({
                 path: 'tweet',
-                select: 'tweetText numberOfLikes numberOfComments numberOfRetweets creationDate',
+                select: 'tweetText tags images numberOfLikes numberOfComments numberOfRetweets creationDate',
                 populate: {
                     path: 'user',
                     select: 'firstName lastName userName profilePhoto',
@@ -154,6 +147,14 @@ router.patch('/update/:retweetid', auth, async (req, res) => {
 
 // Delete the comment if it was created under current logged user's tweet or by the current user.
 router.delete('/delete/:retweetid', auth, async (req, res) => {
+    if (!validateId(req.params.retweetid)) return res.status(400).send('Invalid retweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+
+    let retweet = await Retweet.findById(req.params.retweetid);
+    if (!retweet) return res.status(400).send('Retweet was not found');
+    const tweet = await Tweet.findById(retweet.tweet);
+    const user = await User.findById(retweet.user);
+
     async function deleteRetweetFromTweet(tw, rtw) {
         await tw.retweets.remove(rtw);
         tw.numberOfRetweets -= 1;
@@ -164,17 +165,6 @@ router.delete('/delete/:retweetid', auth, async (req, res) => {
         u.numberOfRetweets -= 1;
         await u.save();
     }
-    const isValidRetweeetId = validateId(req.params.retweetid);
-    if (!isValidRetweeetId) return res.status(400).send('Invalid retweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
-
-    let retweet = await Retweet.findById(req.params.retweetid);
-    if (!retweet) return res.status(400).send('Retweet was not found');
-
-    const tweet = await Tweet.findById(retweet.tweet);
-    const user = await User.findById(retweet.user);
 
     if (JSON.stringify(retweet.user) === JSON.stringify(req.userId)) {
         retweet = await Retweet.findByIdAndDelete(req.params.retweetid);

@@ -8,11 +8,8 @@ const router = express.Router();
 
 // Get the list of all comments of the certain tweet.
 router.get('/all/:tweetid', auth, async (req, res) => {
-    const isValidTweetId = validateId(req.params.tweetid);
-    if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
     const comments = await TweetComment.find({ tweet: req.params.tweetid })
         .populate({
@@ -24,14 +21,9 @@ router.get('/all/:tweetid', auth, async (req, res) => {
 
 // Create a new comment for the certain tweet from the current logged user.
 router.post('/create/:tweetid', auth, async (req, res) => {
-    const isValidTweetId = validateId(req.params.tweetid);
-    if (!isValidTweetId) return res.status(400).send('Invalid tweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
-
-    const user = await User.findById(req.userId);
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!await User.findById(req.userId)) return res.status(400).send('Invalid user.');
 
     const tweet = await Tweet.findById(req.params.tweetid);
     if (!tweet) return res.status(400).send('Tweet was not found.');
@@ -67,17 +59,14 @@ router.post('/create/:tweetid', auth, async (req, res) => {
 
 // Update the comment of the certain tweet if it was created by the current logged user.
 router.patch('/update/:commentid', auth, async (req, res) => {
-    const { error } = validateTweetComment(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
-    const isValidCommentId = validateId(req.params.commentid);
-    if (!isValidCommentId) return res.status(400).send('Invalid tweet ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.commentid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
     let tweetComment = await TweetComment.findById(req.params.commentid);
     if (!tweetComment) return res.status(400).send('Comment was not found');
+
+    const { error } = validateTweetComment(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
 
     if (JSON.stringify(tweetComment.user) === JSON.stringify(req.userId)) {
         tweetComment = await TweetComment.findByIdAndUpdate(req.params.commentid,
@@ -90,22 +79,19 @@ router.patch('/update/:commentid', auth, async (req, res) => {
 
 // Delete the comment if it was created under current logged user's tweet or by the current user.
 router.delete('/delete/:commentid', auth, async (req, res) => {
-    async function deleteCommentFromTweet(tw, com) {
-        await tw.tweetComments.remove(com);
-        tw.numberOfComments -= 1;
-        await tw.save();
-    }
-
-    const isValidCommentId = validateId(req.params.commentid);
-    if (!isValidCommentId) return res.status(400).send('Invalid comment ID.');
-
-    const isValidId = validateId(req.userId);
-    if (!isValidId) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.commentid)) return res.status(400).send('Invalid comment ID.');
+    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
     let tweetComment = await TweetComment.findById(req.params.commentid);
     if (!tweetComment) return res.status(400).send('Comment was not found');
 
     const tweet = await Tweet.findById(tweetComment.tweet);
+
+    async function deleteCommentFromTweet(tw, com) {
+        await tw.tweetComments.remove(com);
+        tw.numberOfComments -= 1;
+        await tw.save();
+    }
 
     if (JSON.stringify(tweetComment.user) === JSON.stringify(req.userId)) {
         tweetComment = await TweetComment.findByIdAndDelete(req.params.commentid);

@@ -10,6 +10,7 @@ require('./startup/routes')(app);
 require('./startup/prod')(app);
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
     logger.info(`Listening to the port ${PORT}`);
 });

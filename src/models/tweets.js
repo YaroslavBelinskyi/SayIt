@@ -60,7 +60,7 @@ const Tweet = mongoose.model('Tweet', tweetSchema);
 function validateTweet(tweet) {
     const schema = {
         tweetText: Joi.string().min(1).max(322).required(),
-        tags: Joi.string(),
+        tags: Joi.string().max(1000),
     };
     return Joi.validate(tweet, schema);
 }

@@ -27,5 +27,6 @@ module.exports = winston.createLogger({
         new winston.transports.MongoDB({ db }),
     ],
 });
+
 // added for logging errors into BD.
 winston.add(new winston.transports.MongoDB({ db }));

@@ -8,6 +8,7 @@ const router = express.Router();
 router.post('/users', async (req, res) => {
     if (!req.body.search || req.body.search.trim() === '') return res.status(400).send('Please enter your query!');
     const searchQueriesArray = req.body.search.trim().split(' ');
+
     // da eto kostil, and "map" doesn't solve this problem -_-
     const regexArray = [];
     searchQueriesArray.forEach((e) => {

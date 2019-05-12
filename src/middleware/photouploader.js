@@ -18,8 +18,8 @@ function storageCreator(name) {
     const upload = multer({ storage });
     return upload;
 }
+
 const uploadTweetImages = storageCreator('tweetImages');
 const uploadAvatar = storageCreator('profilePhotos');
-
 
 module.exports = { uploadTweetImages, uploadAvatar };
