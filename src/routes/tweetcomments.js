@@ -43,8 +43,9 @@ router.post('/create/:tweetid', auth, async (req, res) => {
         await tw.save();
     }
 
-    addTweetToComment(tweet, tweetComment);
+    await addTweetToComment(tweet, tweetComment);
     await tweetComment.save();
+
     const tweetWithComment = await TweetComment.findById(tweetComment._id)
         .populate({
             path: 'user',
@@ -88,18 +89,18 @@ router.delete('/delete/:commentid', auth, async (req, res) => {
     const tweet = await Tweet.findById(tweetComment.tweet);
 
     async function deleteCommentFromTweet(tw, com) {
-        await tw.tweetComments.remove(com);
+        tw.tweetComments.remove(com);
         tw.numberOfComments -= 1;
         await tw.save();
     }
 
     if (JSON.stringify(tweetComment.user) === JSON.stringify(req.userId)) {
         tweetComment = await TweetComment.findByIdAndDelete(req.params.commentid);
-        deleteCommentFromTweet(tweet, req.params.commentid);
+        await deleteCommentFromTweet(tweet, req.params.commentid);
         res.send(tweetComment);
     } else if (JSON.stringify(tweet.user) === JSON.stringify(req.userId)) {
         tweetComment = await TweetComment.findByIdAndDelete(req.params.commentid);
-        deleteCommentFromTweet(tweet, req.params.commentid);
+        await deleteCommentFromTweet(tweet, req.params.commentid);
         res.send(tweetComment);
     } else {
         res.status(400).send('You have no permission to do this.');

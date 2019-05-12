@@ -156,7 +156,7 @@ router.delete('/delete/:retweetid', auth, async (req, res) => {
     const user = await User.findById(retweet.user);
 
     async function deleteRetweetFromTweet(tw, rtw) {
-        await tw.retweets.remove(rtw);
+        tw.retweets.remove(rtw);
         tw.numberOfRetweets -= 1;
         await tw.save();
     }
@@ -168,8 +168,8 @@ router.delete('/delete/:retweetid', auth, async (req, res) => {
 
     if (JSON.stringify(retweet.user) === JSON.stringify(req.userId)) {
         retweet = await Retweet.findByIdAndDelete(req.params.retweetid);
-        deleteRetweetFromTweet(tweet, req.params.retweetid);
-        deleteRetweetFromUser(user, req.params.retweetid);
+        await deleteRetweetFromTweet(tweet, req.params.retweetid);
+        await deleteRetweetFromUser(user, req.params.retweetid);
         res.send(retweet);
     } else {
         res.status(400).send('You have no permission to do this.');

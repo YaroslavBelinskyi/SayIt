@@ -154,8 +154,8 @@ router.post('/follow/:userid', auth, async (req, res) => {
             u.numberOfFollowers += 1;
             await u.save();
         }
-        addUserToFollowings(currentUser, user);
-        addUserToFollowers(user, currentUser);
+        await addUserToFollowings(currentUser, user);
+        await addUserToFollowers(user, currentUser);
         res.send([{
             _id: currentUser._id,
             userName: currentUser.userName,
@@ -180,8 +180,8 @@ router.post('/follow/:userid', auth, async (req, res) => {
             u.numberOfFollowers -= 1;
             await u.save();
         }
-        unfollowUser(currentUser, user);
-        deleteUserFromFollowers(user, currentUser);
+        await unfollowUser(currentUser, user);
+        await deleteUserFromFollowers(user, currentUser);
         res.send([{
             _id: currentUser._id,
             userName: currentUser.userName,

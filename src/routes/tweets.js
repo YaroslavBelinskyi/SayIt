@@ -184,7 +184,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
     if (!user) return res.status(400).send('Invalid user.');
 
     async function removeTweetFromUser(u) {
-        await u.tweets.remove(req.params.tweetid);
+        u.tweets.remove(req.params.tweetid);
         u.numberOfTweets -= 1;
         await u.save();
     }
@@ -192,7 +192,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
         await TweetLike.find({ tweet: tweetid }, async (err, likesArray) => {
             if (err) throw err;
             async function deleteLikeFromUser(l, u) {
-                await u.favorites.remove(l);
+                u.favorites.remove(l);
                 await u.save();
             }
             likesArray.forEach(async (like) => {
@@ -205,7 +205,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
         await Retweet.find({ tweet: tweetid }, async (err, retweetsArray) => {
             if (err) throw err;
             async function deleteRetweetFromUser(rt, u) {
-                await u.retweets.remove(rt);
+                u.retweets.remove(rt);
                 u.numberOfRetweets -= 1;
                 await u.save();
             }
