@@ -122,7 +122,7 @@ router.patch('/update/:retweetid', auth, async (req, res) => {
     let retweet = await Retweet.findById(req.params.retweetid);
     if (!retweet) return res.status(400).send('Retweet was not found');
 
-    if (JSON.stringify(retweet.user) === JSON.stringify(req.userId)) {
+    if (retweet.user.toString() === req.userId) {
         retweet = await Retweet.findByIdAndUpdate(req.params.retweetid,
             { retweetText: req.body.retweetText }, { new: true });
 
@@ -166,7 +166,7 @@ router.delete('/delete/:retweetid', auth, async (req, res) => {
         await u.save();
     }
 
-    if (JSON.stringify(retweet.user) === JSON.stringify(req.userId)) {
+    if (retweet.user.toString() === req.userId) {
         retweet = await Retweet.findByIdAndDelete(req.params.retweetid);
         await deleteRetweetFromTweet(tweet, req.params.retweetid);
         await deleteRetweetFromUser(user, req.params.retweetid);

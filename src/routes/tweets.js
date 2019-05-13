@@ -127,7 +127,16 @@ router.put('/uploadimages/:tweetid', auth, uploadTweetImages.array('tweetimages'
     const tweet = await Tweet.findById(req.params.tweetid);
     if (!tweet) return res.status(400).send('Invalid tweet.');
     if (!req.files) return res.status(400).send('No images provided.');
-    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+
+    if (tweet.user.toString() !== req.userId) {
+        // eslint-disable-next-line no-restricted-syntax
+        for await (const file of req.files) {
+            cloudinary.v2.api.delete_resources(file.public_id, (error) => {
+                if (error) throw error;
+            });
+        }
+        return res.status(400).send('You have no permission to do this.');
+    }
 
     req.files.forEach((img) => {
         tweet.images.push(img.url);
@@ -145,7 +154,7 @@ router.put('/uploadimages/:tweetid', auth, uploadTweetImages.array('tweetimages'
 router.delete('/deleteimages/:tweetid', auth, async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetid);
     if (!tweet) return res.status(400).send('Invalid tweet.');
-    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+    if (tweet.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
 
     // eslint-disable-next-line no-restricted-syntax
     for await (const id of req.body.imagesIds) {
@@ -172,7 +181,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
 
     let tweet = await Tweet.findById(req.params.tweetid);
     if (!tweet) return res.status(400).send('Tweet was not found.');
-    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+    if (tweet.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
 
     const user = await User.findById(tweet.user, async (err, u) => {
         if (err) throw err;
@@ -279,7 +288,7 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
     if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
     const tweet = await Tweet.findById(req.params.tweetid);
-    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
+    if (tweet.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
 
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
@@ -302,7 +311,8 @@ router.post('/pintweet/:tweetid', auth, async (req, res) => {
     if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
     if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
 
-    const tweet = await Tweet.findById(req.params.tweetid, async (err, tw) => {
+    await Tweet.findById(req.params.tweetid, async (err, tw) => {
+        if (tw.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
         if (err) throw err;
 
         const user = await User.findById(tw.user);
@@ -327,7 +337,6 @@ router.post('/pintweet/:tweetid', auth, async (req, res) => {
             isPinned: tw.isPinned,
         });
     });
-    if (JSON.stringify(tweet.user) !== JSON.stringify(req.userId)) return res.status(400).send('You have no permission to do this.');
 });
 
 module.exports = router;

@@ -69,7 +69,7 @@ router.patch('/update/:commentid', auth, async (req, res) => {
     const { error } = validateTweetComment(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    if (JSON.stringify(tweetComment.user) === JSON.stringify(req.userId)) {
+    if (tweetComment.user.toString() === req.userId) {
         tweetComment = await TweetComment.findByIdAndUpdate(req.params.commentid,
             { commentText: req.body.commentText }, { new: true });
         res.send(tweetComment);
@@ -94,11 +94,7 @@ router.delete('/delete/:commentid', auth, async (req, res) => {
         await tw.save();
     }
 
-    if (JSON.stringify(tweetComment.user) === JSON.stringify(req.userId)) {
-        tweetComment = await TweetComment.findByIdAndDelete(req.params.commentid);
-        await deleteCommentFromTweet(tweet, req.params.commentid);
-        res.send(tweetComment);
-    } else if (JSON.stringify(tweet.user) === JSON.stringify(req.userId)) {
+    if (tweetComment.user.toString() === req.userId || tweet.user.toString() === req.userId) {
         tweetComment = await TweetComment.findByIdAndDelete(req.params.commentid);
         await deleteCommentFromTweet(tweet, req.params.commentid);
         res.send(tweetComment);
