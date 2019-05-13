@@ -65,6 +65,4 @@ function validateTweet(tweet) {
     return Joi.validate(tweet, schema);
 }
 
-exports.Tweet = Tweet;
-exports.tweetSchema = tweetSchema;
-exports.validateTweet = validateTweet;
+module.exports = { Tweet, validateTweet };

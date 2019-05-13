@@ -13,4 +13,4 @@ const tweetLikeSchema = new mongoose.Schema({
 
 const TweetLike = mongoose.model('TweetLike', tweetLikeSchema);
 
-exports.TweetLike = TweetLike;
+module.exports = { TweetLike };

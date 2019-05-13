@@ -31,5 +31,4 @@ function validateTweetComment(tweetComment) {
     return Joi.validate(tweetComment, schema);
 }
 
-exports.TweetComment = TweetComment;
-exports.validateTweetComment = validateTweetComment;
+module.exports = { TweetComment, validateTweetComment };

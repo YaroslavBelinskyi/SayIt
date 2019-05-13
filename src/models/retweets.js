@@ -30,6 +30,4 @@ function validateRetweet(retweet) {
     return Joi.validate(retweet, schema);
 }
 
-exports.Retweet = Retweet;
-// exports.retweetSchema = retweetSchema;
-exports.validateRetweet = validateRetweet;
+module.exports = { Retweet, validateRetweet };

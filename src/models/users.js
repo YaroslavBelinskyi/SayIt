@@ -122,7 +122,6 @@ function validateId(id) {
     return mongoose.Types.ObjectId.isValid(id);
 }
 
-exports.User = User;
-exports.validateUser = validateUser;
-exports.validateUserUpdate = validateUserUpdate;
-exports.validateId = validateId;
+module.exports = {
+    User, validateUser, validateUserUpdate, validateId,
+};
