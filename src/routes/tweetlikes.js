@@ -83,4 +83,25 @@ router.post('/like/:tweetid', auth, async (req, res) => {
     }
 });
 
+// Get all likes of certain tweet.
+router.get('/likes/:tweetid', async (req, res) => {
+    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+
+    const likes = await Tweet.findById(req.params.tweetid)
+        .select('tweetLikes numberOfLikes')
+        .populate({
+            path: 'tweetLikes',
+            select: '-tweet -__v',
+            populate: {
+                path: 'user',
+                select: 'firstName lastName userName profilePhoto',
+            },
+        })
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName profilePhoto',
+        });
+    res.send(likes);
+});
+
 module.exports = router;
