@@ -19,6 +19,10 @@ const retweetSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    isRetweet: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const Retweet = mongoose.model('Retweet', retweetSchema);
