@@ -176,4 +176,28 @@ router.delete('/delete/:retweetid', auth, async (req, res) => {
     }
 });
 
+// Get all retweets of certain tweet.
+router.get('/allretweets/:tweetid', async (req, res) => {
+    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+
+    const retweets = await Tweet.findById(req.params.tweetid)
+        .select('retweets numberOfRetweets user')
+        .populate({
+            path: 'retweets',
+            populate: {
+                path: 'tweet user',
+                select: 'firstName lastName userName profilePhoto tweetText numberOfLikes numberOfComments numberOfRetweets creationDate images tags',
+                populate: {
+                    path: 'user',
+                    select: 'firstName lastName userName profilePhoto',
+                },
+            },
+        })
+        .populate({
+            path: 'user',
+            select: 'firstName lastName userName profilePhoto',
+        });
+    res.send(retweets);
+});
+
 module.exports = router;
