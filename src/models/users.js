@@ -75,7 +75,7 @@ const userSchema = new mongoose.Schema({
     },
     profilePhoto: {
         type: String,
-        default: '',
+        default: 'http://res.cloudinary.com/slare/image/upload/v1558007502/profilePhotos/zpvnxfrxog7uu4ylkomn.png',
     },
     profilePhotoId: {
         type: String,
