@@ -12,8 +12,8 @@ const router = express.Router();
 
 // Get the list of all tweets of certain user.
 router.get('/all/:userid', async (req, res) => {
-    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
-    if (!await User.findById(req.params.userid)) return res.status(400).send('Invalid user.');
+    if (!validateId(req.params.userid)) return res.status(422).send('Invalid user ID.');
+    if (!await User.findById(req.params.userid)) return res.status(404).send('User not found.');
 
     const tweets = await Tweet.find({ user: req.params.userid })
         .select('-__v -retweets -tweetLikes -tweetComments -imagesIds')
@@ -28,7 +28,7 @@ router.get('/all/:userid', async (req, res) => {
 
 // Get the feed with all tweets and retweets of folowing users for the current logged user.
 router.get('/feed', auth, async (req, res) => {
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
 
     const allTweets = await User.findById(req.userId)
         .select('followings -_id')
@@ -63,8 +63,8 @@ router.get('/feed', auth, async (req, res) => {
 
 // Get the list of all favorites tweets (liked tweets) for the current user.
 router.get('/favorites', auth, async (req, res) => {
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
-    if (!await User.findById(req.userId)) return res.status(400).send('Invalid user.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
+    if (!await User.findById(req.userId)) return res.status(404).send('User not found.');
 
     const favorites = await User.findById(req.userId).select('favorites')
         .populate({
@@ -84,10 +84,10 @@ router.get('/favorites', auth, async (req, res) => {
 
 // Create a new tweet for the current logged user.
 router.post('/create', auth, async (req, res) => {
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
 
     const user = await User.findById(req.userId);
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
 
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
@@ -125,8 +125,8 @@ router.post('/create', auth, async (req, res) => {
 // Add images to tweet.
 router.put('/uploadimages/:tweetid', auth, uploadTweetImages.array('tweetimages'), async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetid);
-    if (!tweet) return res.status(400).send('Invalid tweet.');
-    if (!req.files) return res.status(400).send('No images provided.');
+    if (!tweet) return res.status(404).send('Tweet not found.');
+    if (!req.files) return res.status(404).send('No images provided.');
 
     if (tweet.user.toString() !== req.userId) {
         // eslint-disable-next-line no-restricted-syntax
@@ -135,7 +135,7 @@ router.put('/uploadimages/:tweetid', auth, uploadTweetImages.array('tweetimages'
                 if (error) throw error;
             });
         }
-        return res.status(400).send('You have no permission to do this.');
+        return res.status(403).send('You have no permission to do this.');
     }
 
     req.files.forEach((img) => {
@@ -153,8 +153,8 @@ router.put('/uploadimages/:tweetid', auth, uploadTweetImages.array('tweetimages'
 // Remove images from tweet.
 router.delete('/deleteimages/:tweetid', auth, async (req, res) => {
     const tweet = await Tweet.findById(req.params.tweetid);
-    if (!tweet) return res.status(400).send('Invalid tweet.');
-    if (tweet.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
+    if (!tweet) return res.status(404).send('Tweet not found.');
+    if (tweet.user.toString() !== req.userId) return res.status(403).send('You have no permission to do this.');
 
     // eslint-disable-next-line no-restricted-syntax
     for await (const id of req.body.imagesIds) {
@@ -176,12 +176,12 @@ router.delete('/deleteimages/:tweetid', auth, async (req, res) => {
 
 // Delete certain tweet created by the current logged user.
 router.delete('/delete/:tweetid', auth, async (req, res) => {
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
 
     let tweet = await Tweet.findById(req.params.tweetid);
-    if (!tweet) return res.status(400).send('Tweet was not found.');
-    if (tweet.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
+    if (!tweet) return res.status(404).send('Tweet not found.');
+    if (tweet.user.toString() !== req.userId) return res.status(403).send('You have no permission to do this.');
 
     const user = await User.findById(tweet.user, async (err, u) => {
         if (err) throw err;
@@ -190,7 +190,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
             await u.save();
         }
     });
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
 
     async function removeTweetFromUser(u) {
         u.tweets.remove(req.params.tweetid);
@@ -262,7 +262,7 @@ router.delete('/delete/:tweetid', auth, async (req, res) => {
 
 // Get the certain tweet.
 router.get('/:tweetid', async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
 
     const tweet = await Tweet.findById(req.params.tweetid)
         .select('-retweets -tweetLikes -__v')
@@ -278,24 +278,24 @@ router.get('/:tweetid', async (req, res) => {
                 select: 'firstName lastName userName profilePhoto',
             },
         });
-    if (!tweet) return res.status(400).send('Tweet was not found.');
+    if (!tweet) return res.status(400).send('Tweet not found.');
     res.send(tweet);
 });
 
 // Update certain tweet created by the current logged user.
 router.patch('/update/:tweetid', auth, async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
 
     const tweet = await Tweet.findById(req.params.tweetid);
-    if (tweet.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
+    if (tweet.user.toString() !== req.userId) return res.status(403).send('You have no permission to do this.');
 
     const { error } = validateTweet(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
     let updatedTweet = await Tweet.findByIdAndUpdate(req.params.tweetid,
         { tweetText: req.body.tweetText }, { new: true });
-    if (!updatedTweet) return res.status(400).send('Tweet was not found.');
+    if (!updatedTweet) return res.status(404).send('Tweet not found.');
 
     updatedTweet = await Tweet.findById(req.params.tweetid)
         .select('-tweetLikes -tweetComments -retweets')
@@ -308,11 +308,11 @@ router.patch('/update/:tweetid', auth, async (req, res) => {
 
 // Pin or unpin tweet at the top of all tweets list or in a user profile.
 router.post('/pintweet/:tweetid', auth, async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
 
     await Tweet.findById(req.params.tweetid, async (err, tw) => {
-        if (tw.user.toString() !== req.userId) return res.status(400).send('You have no permission to do this.');
+        if (tw.user.toString() !== req.userId) return res.status(403).send('You have no permission to do this.');
         if (err) throw err;
 
         const user = await User.findById(tw.user);

@@ -8,8 +8,8 @@ const router = express.Router();
 
 // Get the list of all comments of the certain tweet.
 router.get('/all/:tweetid', auth, async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
 
     const comments = await TweetComment.find({ tweet: req.params.tweetid })
         .populate({
@@ -21,12 +21,12 @@ router.get('/all/:tweetid', auth, async (req, res) => {
 
 // Create a new comment for the certain tweet from the current logged user.
 router.post('/create/:tweetid', auth, async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
-    if (!await User.findById(req.userId)) return res.status(400).send('Invalid user.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
+    if (!await User.findById(req.userId)) return res.status(404).send('User not found.');
 
     const tweet = await Tweet.findById(req.params.tweetid);
-    if (!tweet) return res.status(400).send('Tweet was not found.');
+    if (!tweet) return res.status(404).send('Tweet not found.');
 
     const { error } = validateTweetComment(req.body);
     if (error) return res.status(400).send(error.details[0].message);
@@ -60,11 +60,11 @@ router.post('/create/:tweetid', auth, async (req, res) => {
 
 // Update the comment of the certain tweet if it was created by the current logged user.
 router.patch('/update/:commentid', auth, async (req, res) => {
-    if (!validateId(req.params.commentid)) return res.status(400).send('Invalid tweet ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.commentid)) return res.status(422).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(404).send('Invalid user ID.');
 
     let tweetComment = await TweetComment.findById(req.params.commentid);
-    if (!tweetComment) return res.status(400).send('Comment was not found');
+    if (!tweetComment) return res.status(404).send('Comment not found');
 
     const { error } = validateTweetComment(req.body);
     if (error) return res.status(400).send(error.details[0].message);
@@ -74,17 +74,17 @@ router.patch('/update/:commentid', auth, async (req, res) => {
             { commentText: req.body.commentText }, { new: true });
         res.send(tweetComment);
     } else {
-        res.status(400).send('You have no permission to do this.');
+        res.status(403).send('You have no permission to do this.');
     }
 });
 
 // Delete the comment if it was created under current logged user's tweet or by the current user.
 router.delete('/delete/:commentid', auth, async (req, res) => {
-    if (!validateId(req.params.commentid)) return res.status(400).send('Invalid comment ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.commentid)) return res.status(422).send('Invalid comment ID.');
+    if (!validateId(req.userId)) return res.status(404).send('Invalid user ID.');
 
     let tweetComment = await TweetComment.findById(req.params.commentid);
-    if (!tweetComment) return res.status(400).send('Comment was not found');
+    if (!tweetComment) return res.status(404).send('Comment not found');
 
     const tweet = await Tweet.findById(tweetComment.tweet);
 
@@ -99,7 +99,7 @@ router.delete('/delete/:commentid', auth, async (req, res) => {
         await deleteCommentFromTweet(tweet, req.params.commentid);
         res.send(tweetComment);
     } else {
-        res.status(400).send('You have no permission to do this.');
+        res.status(403).send('You have no permission to do this.');
     }
 });
 

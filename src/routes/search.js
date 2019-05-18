@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Search user by name, last name or nickname.
 router.post('/users', async (req, res) => {
-    if (!req.body.search || req.body.search.trim() === '') return res.status(400).send('Please enter your query!');
+    if (!req.body.search || req.body.search.trim() === '') return res.status(404).send('Please enter your search query!');
     const searchQueriesArray = req.body.search.trim().split(' ');
 
     // da eto kostil, and "map" doesn't solve this problem -_-
@@ -41,7 +41,7 @@ router.post('/users', async (req, res) => {
 
 // Search tweets by text.
 router.post('/tweets', async (req, res) => {
-    if (!req.body.search || req.body.search.trim() === '') return res.status(400).send('Please enter your query!');
+    if (!req.body.search || req.body.search.trim() === '') return res.status(404).send('Please enter your search query!');
 
     const reg = new RegExp(req.body.search.trim(), 'i');
     const results = await Tweet.find({
@@ -61,7 +61,7 @@ router.post('/tweets', async (req, res) => {
 
 // Search tweets by tags.
 router.post('/tags', async (req, res) => {
-    if (!req.body.tags || req.body.tags.trim() === '') return res.status(400).send('Please enter your query!');
+    if (!req.body.tags || req.body.tags.trim() === '') return res.status(404).send('Please enter your search query!');
 
     const tags = [];
     if (req.body.tags) {

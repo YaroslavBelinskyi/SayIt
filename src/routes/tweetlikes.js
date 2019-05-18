@@ -8,14 +8,14 @@ const router = express.Router();
 
 // Like\unlike certain tweet by the current logged user and add\remove it to\from his favorites.
 router.post('/like/:tweetid', auth, async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
-    if (!validateId(req.userId)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid user ID.');
 
     const user = await User.findById(req.userId);
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
 
     const tweet = await Tweet.findById(req.params.tweetid);
-    if (!tweet) return res.status(400).send('Tweet was not found.');
+    if (!tweet) return res.status(404).send('Tweet not found.');
 
     const tweetHasLike = await TweetLike.findOne({
         tweet: req.params.tweetid,
@@ -85,7 +85,7 @@ router.post('/like/:tweetid', auth, async (req, res) => {
 
 // Get all likes of certain tweet.
 router.get('/likes/:tweetid', async (req, res) => {
-    if (!validateId(req.params.tweetid)) return res.status(400).send('Invalid tweet ID.');
+    if (!validateId(req.params.tweetid)) return res.status(422).send('Invalid tweet ID.');
 
     const likes = await Tweet.findById(req.params.tweetid)
         .select('tweetLikes numberOfLikes')

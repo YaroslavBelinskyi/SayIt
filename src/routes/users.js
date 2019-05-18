@@ -23,7 +23,7 @@ router.get('/all', async (req, res) => {
 
 // Get one user.
 router.get('/:userid', async (req, res) => {
-    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(422).send('Invalid user ID.');
 
     const user = await User.findById(req.params.userid)
         .select('-password -__v -followings -followers -favorites -email -profilePhotoId -retweets')
@@ -44,7 +44,7 @@ router.get('/:userid', async (req, res) => {
             },
         });
 
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
     res.send(user);
 });
 
@@ -53,8 +53,8 @@ router.post('/new', async (req, res) => {
     const { error } = validateUser(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    if (await User.findOne({ email: req.body.email })) return res.status(400).send('Email is already register.');
-    if (await User.findOne({ userName: req.body.userName })) return res.status(400).send('User name is already taken.');
+    if (await User.findOne({ email: req.body.email })) return res.status(403).send('Email is already registered.');
+    if (await User.findOne({ userName: req.body.userName })) return res.status(403).send('Username is already taken.');
 
     const user = new User({
         userName: req.body.userName,
@@ -75,8 +75,8 @@ router.post('/new', async (req, res) => {
 // Upload user's avatar or replace the old one.
 router.put('/uploadavatar', auth, uploadAvatar.single('avatar'), async (req, res) => {
     const user = await User.findById(req.userId);
-    if (!user) return res.status(400).send('Invalid user.');
-    if (!req.file) return res.status(400).send('No image provided.');
+    if (!user) return res.status(404).send('User not found.');
+    if (!req.file) return res.status(404).send('No image provided.');
 
     if (user.profilePhotoId) {
         await cloudinary.v2.api.delete_resources(user.profilePhotoId, (error) => {
@@ -95,13 +95,13 @@ router.put('/uploadavatar', auth, uploadAvatar.single('avatar'), async (req, res
 
 // Update information of the current logged user.
 router.patch('/updateme', auth, async (req, res) => {
-    if (!await User.findById(req.userId)) return res.status(400).send('Invalid user.');
+    if (!await User.findById(req.userId)) return res.status(422).send('User not found.');
 
     const { error } = validateUserUpdate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    if (await User.findOne({ email: req.body.email })) return res.status(400).send('Email is already taken.');
-    if (await User.findOne({ userName: req.body.userName })) return res.status(400).send('Username is already taken.');
+    if (await User.findOne({ email: req.body.email })) return res.status(403).send('Email is already taken.');
+    if (await User.findOne({ userName: req.body.userName })) return res.status(403).send('Username is already taken.');
 
     await User.findById(req.userId).exec(async (err, u) => {
         if (err) throw err;
@@ -128,15 +128,15 @@ router.patch('/updateme', auth, async (req, res) => {
 
 // Follow one certain user.
 router.post('/follow/:userid', auth, async (req, res) => {
-    if (!validateId(req.userId)) return res.status(400).send('Invalid current user ID.');
-    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
-    if (req.params.userid === req.userId) return res.status(400).send('You cannot follow yourself.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid current user ID.');
+    if (!validateId(req.params.userid)) return res.status(422).send('Invalid user ID.');
+    if (req.params.userid === req.userId) return res.status(403).send('You cannot follow yourself.');
 
     const user = await User.findById(req.params.userid);
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
 
     const currentUser = await User.findById(req.userId);
-    if (!currentUser) return res.status(400).send('Invalid user.');
+    if (!currentUser) return res.status(404).send('Current user not found.');
 
     const isFollowed = await User.findOne({
         _id: req.userId,
@@ -200,15 +200,15 @@ router.post('/follow/:userid', auth, async (req, res) => {
 
 // Remove follower from your followers.
 router.post('/removefollower/:userid', auth, async (req, res) => {
-    if (!validateId(req.userId)) return res.status(400).send('Invalid current user ID.');
-    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
-    if (req.params.userid === req.userId) return res.status(400).send('You cannot do this with yourself.');
+    if (!validateId(req.userId)) return res.status(422).send('Invalid current user ID.');
+    if (!validateId(req.params.userid)) return res.status(422).send('Invalid user ID.');
+    if (req.params.userid === req.userId) return res.status(403).send('You cannot do this with yourself.');
 
     const user = await User.findById(req.params.userid);
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
 
     const currentUser = await User.findById(req.userId);
-    if (!currentUser) return res.status(400).send('Invalid current user.');
+    if (!currentUser) return res.status(404).send('Current user not found.');
 
     const isFollower = await User.findOne({
         _id: req.userId,
@@ -242,13 +242,13 @@ router.post('/removefollower/:userid', auth, async (req, res) => {
             lastName: user.lastName,
         }]);
     } else {
-        res.send('This user does not follow you.');
+        res.status(403).send('This user does not follow you.');
     }
 });
 
 // Get the list of all followers of the certain user.
 router.get('/followers/:userid', async (req, res) => {
-    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(422).send('Invalid user ID.');
 
     const user = await User.findById(req.params.userid)
         .select('followers, numberOfFollowers')
@@ -256,13 +256,13 @@ router.get('/followers/:userid', async (req, res) => {
             path: 'followers',
             select: 'firstName lastName profilePhoto userName pinnedTweet numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
         });
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
     res.send(user);
 });
 
 // Get the list of all followings of the certain user.
 router.get('/followings/:userid', async (req, res) => {
-    if (!validateId(req.params.userid)) return res.status(400).send('Invalid user ID.');
+    if (!validateId(req.params.userid)) return res.status(422).send('Invalid user ID.');
 
     const user = await User.findById(req.params.userid)
         .select('followings, numberOfFollowings')
@@ -270,7 +270,7 @@ router.get('/followings/:userid', async (req, res) => {
             path: 'followings',
             select: 'firstName lastName profilePhoto userName pinnedTweet numberOfTweets numberOfRetweets numberOfFollowers numberOfFollowings',
         });
-    if (!user) return res.status(400).send('Invalid user.');
+    if (!user) return res.status(404).send('User not found.');
     res.send(user);
 });
 
