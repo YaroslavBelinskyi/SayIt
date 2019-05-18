@@ -2,6 +2,6 @@
     "jwtPrivateKey": "asd",
     "db": "mongodb://localhost/SayIt",
     "cloudName": "slare",
-    "apiKey": "649437853438282",
-    "apiSecret": "4pLER3TwW8mIc1BbuJRu2hE4yDk"
+    "apiKey": "12345656",
+    "apiSecret": "123example"
 }
